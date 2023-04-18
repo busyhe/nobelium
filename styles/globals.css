@@ -124,6 +124,9 @@ nav {
 @media (min-width: 768px) {
   .sticky-nav-full {
     @apply max-w-full border-b border-opacity-50 border-gray-200 dark:border-gray-600 dark:border-opacity-50;
+    background-image: radial-gradient(transparent 1px, #000000 1px);
+    background-size: 4px 4px;
+    backdrop-filter: saturate(50%) blur(4px);
   }
   .header-name {
     display: grid;

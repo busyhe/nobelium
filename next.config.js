@@ -1,6 +1,6 @@
 module.exports = {
   images: {
-    domains: ['gravatar.com']
+    domains: ['gravatar.com', 'www.notion.so']
   },
   eslint: {
     // dirs: ['components', 'layouts', 'lib', 'pages']

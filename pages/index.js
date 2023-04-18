@@ -1,6 +1,7 @@
 import { clientConfig } from '@/lib/server/config'
 
 import Container from '@/components/Container'
+import GalleryGrid from '@/components/GalleryGrid'
 import BlogPost from '@/components/BlogPost'
 import Pagination from '@/components/Pagination'
 import { getAllPosts } from '@/lib/notion'
@@ -26,10 +27,12 @@ export default function Blog ({ postsToShow, page, showNext }) {
 
   return (
     <Container title={title} description={description}>
-      {postsToShow.map(post => (
-        <BlogPost key={post.id} post={post} />
-      ))}
-      {showNext && <Pagination page={page} showNext={showNext} />}
+      <GalleryGrid>
+        {postsToShow.map(post => (
+          <BlogPost key={post.id} post={post} />
+        ))}
+        {showNext && <Pagination page={page} showNext={showNext} />}
+      </GalleryGrid>
     </Container>
   )
 }

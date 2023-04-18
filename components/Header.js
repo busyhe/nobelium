@@ -86,7 +86,7 @@ export default function Header ({ navBarTitle, fullWidth }) {
       <div className="observer-element h-4 md:h-12" ref={sentinelRef}></div>
       <div
         className={`sticky-nav group m-auto w-full h-6 flex flex-row justify-between items-center mb-2 md:mb-12 py-8 bg-opacity-60 ${
-          !fullWidth ? 'max-w-3xl px-4' : 'px-4 md:px-24'
+          !fullWidth ? 'px-8' : 'px-8 md:px-24'
         }`}
         id="sticky-nav"
         ref={navRef}
@@ -135,7 +135,7 @@ const HeaderName = forwardRef(function HeaderName ({ siteTitle, siteDescription,
       {postTitle && <span className="post-title row-start-1 col-start-1">{postTitle}</span>}
       <span className="row-start-1 col-start-1">
         <span className="site-title">{siteTitle}</span>
-        <span className="site-description font-normal">, {siteDescription}</span>
+        {/* <span className="site-description font-normal">, {siteDescription}</span> */}
       </span>
     </p>
   )
