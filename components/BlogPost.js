@@ -17,6 +17,7 @@ const BlogPost = ({ post }) => {
             height={500}
             src={post.page_cover}
             alt={BLOG.title}
+            priority={true}
           />
           <h2 className="text-lg md:text-xl font-medium mb-2 cursor-pointer text-black dark:text-gray-100">
             {post.title}
