@@ -1,9 +1,11 @@
 {
   "NAV": {
-    "INDEX": "博客",
+    "INDEX": "home",
     "RSS": "订阅",
-    "SEARCH": "搜索",
-    "ABOUT": "关于"
+    "SEARCH": "search",
+    "ABOUT": "关于",
+    "ME": "me",
+    "WIKI": "wiki"
   },
   "PAGINATION": {
     "PREV": "上一页",

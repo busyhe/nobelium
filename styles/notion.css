@@ -120,6 +120,12 @@ pre[class*='language-'] {
   @apply text-center;
   @apply text-gray-500 dark:text-gray-400;
 }
+.notion-asset-wrapper {
+  width: 100%;
+}
+.notion-asset-wrapper>div {
+  height: auto !important;
+}
 .notion-asset-wrapper-tweet iframe {
   @apply bg-day dark:bg-night;
 }

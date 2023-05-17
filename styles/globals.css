@@ -94,6 +94,10 @@ body::-webkit-scrollbar-thumb {
   overflow: hidden;
 }
 
+.observer-element {
+  height: 0 !important;
+}
+
 .sticky-nav-full .nav {
   @apply text-gray-600 dark:text-gray-300;
 }
