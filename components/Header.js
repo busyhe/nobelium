@@ -35,7 +35,7 @@ const NavBar = () => {
   )
 }
 
-export default function Header ({ navBarTitle, fullWidth }) {
+export default function Header({ navBarTitle, fullWidth }) {
   const BLOG = useConfig()
   const { dark } = useTheme()
 
@@ -74,7 +74,7 @@ export default function Header ({ navBarTitle, fullWidth }) {
 
   const titleRef = useRef(/** @type {HTMLParagraphElement} */ undefined)
 
-  function handleClickHeader (/** @type {MouseEvent} */ ev) {
+  function handleClickHeader(/** @type {MouseEvent} */ ev) {
     if (![navRef.current, titleRef.current].includes(ev.target)) return
 
     window.scrollTo({
@@ -87,9 +87,8 @@ export default function Header ({ navBarTitle, fullWidth }) {
     <>
       <div className="observer-element h-4 md:h-12" ref={sentinelRef}></div>
       <div
-        className={`sticky-nav group m-auto w-full h-6 flex flex-row justify-between items-center mb-2 md:mb-28 py-8 bg-opacity-60 ${
-          !fullWidth ? 'px-8' : 'px-8 md:px-24'
-        }`}
+        className={`sticky-nav group m-auto w-full h-6 flex flex-row justify-between items-center mb-2 md:mb-28 py-8 bg-opacity-60 ${!fullWidth ? 'px-8' : 'px-8 md:px-24'
+          }`}
         id="sticky-nav"
         ref={navRef}
         onClick={handleClickHeader}
@@ -106,20 +105,21 @@ export default function Header ({ navBarTitle, fullWidth }) {
         <div className="flex items-center">
           <Link href="/" aria-label={BLOG.title}>
             <Image
+              className='inline-block'
               src={favicon}
               width={24}
               height={24}
               alt={BLOG.title}
               onError={() => setFavicon(true)}
             />
+            <HeaderName
+              ref={titleRef}
+              siteTitle={BLOG.title}
+              siteDescription={BLOG.description}
+              postTitle={navBarTitle}
+              onClick={handleClickHeader}
+            />
           </Link>
-          <HeaderName
-            ref={titleRef}
-            siteTitle={BLOG.title}
-            siteDescription={BLOG.description}
-            postTitle={navBarTitle}
-            onClick={handleClickHeader}
-          />
         </div>
         <NavBar />
       </div>
@@ -127,11 +127,11 @@ export default function Header ({ navBarTitle, fullWidth }) {
   )
 }
 
-const HeaderName = forwardRef(function HeaderName ({ siteTitle, siteDescription, postTitle, onClick }, ref) {
+const HeaderName = forwardRef(function HeaderName({ siteTitle, siteDescription, postTitle, onClick }, ref) {
   return (
     <p
       ref={ref}
-      className="header-name ml-2 font-medium text-gray-600 dark:text-gray-300 capture-pointer-events grid-rows-1 grid-cols-1 items-center"
+      className="inline-block align-middle header-name ml-2 font-medium text-gray-600 dark:text-gray-300 capture-pointer-events grid-rows-1 grid-cols-1 items-center"
       onClick={onClick}
     >
       {postTitle && <span className="post-title row-start-1 col-start-1">{postTitle}</span>}

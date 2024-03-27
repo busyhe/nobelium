@@ -133,7 +133,7 @@ nav {
     backdrop-filter: saturate(50%) blur(4px); */
   }
   .header-name {
-    display: grid;
+    display: inline-block;
   }
   .site-title,
   .post-title {
