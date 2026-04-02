@@ -1,4 +1,8 @@
 module.exports = {
+  experimental: {
+    workerThreads: false,
+    cpus: 1
+  },
   images: {
     domains: ['gravatar.com', 'www.notion.so']
   },

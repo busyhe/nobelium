@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types'
-import { getPageTableOfContents } from 'notion-utils'
+import { getPageTableOfContents, getBlockValue } from 'notion-utils'
 import cn from 'classnames'
 
 export default function TableOfContents ({ blockMap, className, style }) {
   const collectionId = Object.keys(blockMap.collection)[0]
-  const page = Object.values(blockMap.block).find(block => block.value.parent_id === collectionId).value
+  const page = Object.values(blockMap.block).map(b => getBlockValue(b)).find(v => v && v.parent_id === collectionId)
   const nodes = getPageTableOfContents(page, blockMap)
 
   if (!nodes.length) return null

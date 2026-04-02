@@ -1,7 +1,7 @@
 import { createElement as h } from 'react'
 import dynamic from 'next/dynamic'
 import { NotionRenderer as Renderer } from 'react-notion-x'
-import { getTextContent } from 'notion-utils'
+import { getTextContent, getBlockValue } from 'notion-utils'
 import { FONTS_SANS, FONTS_SERIF } from '@/consts'
 import { useConfig } from '@/lib/config'
 import Toggle from '@/components/notion-blocks/Toggle'
@@ -115,7 +115,9 @@ export default function NotionRenderer (props) {
 
   // Mark block types to be custom rendered by appending a suffix
   if (props.recordMap) {
-    for (const { value: block } of Object.values(props.recordMap.block)) {
+    for (const blockEntry of Object.values(props.recordMap.block)) {
+      const block = getBlockValue(blockEntry)
+      if (!block) continue
       switch (block?.type) {
         case 'toggle':
           block.type += '_nobelium'
