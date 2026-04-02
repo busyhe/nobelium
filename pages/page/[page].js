@@ -2,14 +2,17 @@ import { config } from '@/lib/server/config'
 
 import Container from '@/components/Container'
 import BlogPost from '@/components/BlogPost'
+import GalleryGrid from '@/components/GalleryGrid'
 import Pagination from '@/components/Pagination'
 import { getAllPosts } from '@/lib/notion'
 
 const Page = ({ postsToShow, page, showNext }) => {
   return (
     <Container>
-      {postsToShow &&
-        postsToShow.map(post => <BlogPost key={post.id} post={post} />)}
+      <GalleryGrid>
+        {postsToShow &&
+          postsToShow.map(post => <BlogPost key={post.id} post={post} />)}
+      </GalleryGrid>
       <Pagination page={page} showNext={showNext} />
     </Container>
   )
