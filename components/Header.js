@@ -105,7 +105,7 @@ export default function Header({ navBarTitle, fullWidth }) {
         <div className="flex items-center">
           <Link href="/" aria-label={BLOG.title}>
             <Image
-              className='inline-block'
+              className='inline-block rounded-md'
               src={favicon}
               width={24}
               height={24}
@@ -137,7 +137,6 @@ const HeaderName = forwardRef(function HeaderName({ siteTitle, siteDescription, 
       {postTitle && <span className="post-title row-start-1 col-start-1">{postTitle}</span>}
       <span className="row-start-1 col-start-1">
         <span className="site-title">{siteTitle}</span>
-        {/* <span className="site-description font-normal">, {siteDescription}</span> */}
       </span>
     </p>
   )
