@@ -1,4 +1,4 @@
-const requireAsset = require.context('.', true, /^\.\/(\w+)\/([\w-]+)\.json$/, 'lazy')
+const requireAsset = require.context('.', true, /^\.\/(\w+)\/([\w-]+)\.json$/)
 
 /**
  * Lazy-load lang data
@@ -7,6 +7,6 @@ const requireAsset = require.context('.', true, /^\.\/(\w+)\/([\w-]+)\.json$/, '
  * @param {string} lang    - The language name
  * @returns {Promise<object>} - The content of a lang JSON
  */
-export default function loadLocale (section, lang) {
+export default async function loadLocale (section, lang) {
   return requireAsset(`./${section}/${lang}.json`)
 }

@@ -4,11 +4,32 @@ module.exports = {
     cpus: 1
   },
   images: {
-    domains: ['gravatar.com', 'www.notion.so']
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'gravatar.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.notion.so'
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.notionusercontent.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com'
+      },
+      {
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
+        pathname: '/secure.notion-static.com/**'
+      }
+    ]
   },
-  eslint: {
-    // dirs: ['components', 'layouts', 'lib', 'pages']
-  },
+  turbopack: {},
   async headers() {
     return [
       {
@@ -27,15 +48,4 @@ module.exports = {
     config.resolve.alias.canvas = false
     return config
   }
-  // webpack: (config, { dev, isServer }) => {
-  //   // Replace React with Preact only in client production build
-  //   if (!dev && !isServer) {
-  //     Object.assign(config.resolve.alias, {
-  //       react: 'preact/compat',
-  //       'react-dom/test-utils': 'preact/test-utils',
-  //       'react-dom': 'preact/compat'
-  //     })
-  //   }
-  //   return config
-  // }
 }

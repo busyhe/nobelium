@@ -1,7 +1,7 @@
 import { createElement as h } from 'react'
 import dynamic from 'next/dynamic'
 import { NotionRenderer as Renderer } from 'react-notion-x'
-import { getTextContent, getBlockValue } from 'notion-utils'
+import { getTextContent, getBlockValue, defaultMapImageUrl } from 'notion-utils'
 import { FONTS_SANS, FONTS_SERIF } from '@/consts'
 import { useConfig } from '@/lib/config'
 import Toggle from '@/components/notion-blocks/Toggle'
@@ -137,6 +137,7 @@ export default function NotionRenderer (props) {
       </style>
       <Renderer
         components={components}
+        mapImageUrl={defaultMapImageUrl}
         mapPageUrl={mapPageUrl}
         {...props}
       />
