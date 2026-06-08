@@ -11,18 +11,20 @@ export async function getStaticProps () {
   const posts = await getAllPosts({ includePages: false })
   const postsToShow = posts.slice(0, clientConfig.postsPerPage)
   const totalPosts = posts.length
+  const totalPages = Math.ceil(totalPosts / clientConfig.postsPerPage)
   const showNext = totalPosts > clientConfig.postsPerPage
   return {
     props: {
       page: 1, // current page is 1
       postsToShow,
-      showNext
+      showNext,
+      totalPages
     },
     revalidate: clientConfig.revalidateTime
   }
 }
 
-export default function Blog ({ postsToShow, page, showNext }) {
+export default function Blog ({ postsToShow, page, showNext, totalPages }) {
   const { title, description } = useConfig()
 
   return (
@@ -32,7 +34,7 @@ export default function Blog ({ postsToShow, page, showNext }) {
           <BlogPost key={post.id} post={post} priority={index < 4} />
         ))}
       </GalleryGrid>
-      {showNext && <Pagination page={page} showNext={showNext} />}
+      {showNext && <Pagination page={page} showNext={showNext} totalPages={totalPages} />}
     </Container>
   )
 }

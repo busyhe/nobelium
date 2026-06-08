@@ -6,14 +6,14 @@ import GalleryGrid from '@/components/GalleryGrid'
 import Pagination from '@/components/Pagination'
 import { getAllPosts } from '@/lib/notion'
 
-const Page = ({ postsToShow, page, showNext }) => {
+const Page = ({ postsToShow, page, showNext, totalPages }) => {
   return (
     <Container>
       <GalleryGrid>
         {postsToShow &&
           postsToShow.map((post, index) => <BlogPost key={post.id} post={post} priority={index < 4} />)}
       </GalleryGrid>
-      <Pagination page={page} showNext={showNext} />
+      <Pagination page={page} showNext={showNext} totalPages={totalPages} />
     </Container>
   )
 }
@@ -30,12 +30,14 @@ export async function getStaticProps (context) {
   if (!postsToShow.length) return { notFound: true }
 
   const totalPosts = posts.length
+  const totalPages = Math.ceil(totalPosts / config.postsPerPage)
   const showNext = page * config.postsPerPage < totalPosts
   return {
     props: {
       page, // Current Page
       postsToShow,
-      showNext
+      showNext,
+      totalPages
     },
     revalidate: config.revalidateTime
   }
