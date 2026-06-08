@@ -5,25 +5,53 @@ import { useConfig } from '@/lib/config'
 
 dayjs.extend(localizedFormat)
 
-const loaded = {}
+const defaultLocale = 'en'
+const localeMap = {
+  'en-US': 'en',
+  'zh-CN': 'zh-cn',
+  'zh-HK': 'zh-hk',
+  'zh-TW': 'zh-tw',
+  'ja-JP': 'ja',
+  'es-ES': 'es'
+}
+const localeLoaders = {
+  en: () => Promise.resolve(),
+  'zh-cn': () => import('dayjs/locale/zh-cn'),
+  'zh-hk': () => import('dayjs/locale/zh-hk'),
+  'zh-tw': () => import('dayjs/locale/zh-tw'),
+  ja: () => import('dayjs/locale/ja'),
+  es: () => import('dayjs/locale/es')
+}
+const loaded = {
+  en: true
+}
 
 export default function FormattedDate ({ date }) {
-  const lang = useConfig().lang.slice(0, 2)
-  const [isLocaleLoaded, setIsLocaleLoaded] = useState(loaded[lang] === true)
+  const locale = localeMap[useConfig().lang] || defaultLocale
+  const [activeLocale, setActiveLocale] = useState(loaded[locale] === true ? locale : defaultLocale)
 
   useEffect(() => {
-    if (!isLocaleLoaded) {
-      loaded[lang] ??= import(`dayjs/locale/${lang}`).then(
-        () => {
-          loaded[lang] = true
-          dayjs.locale(lang)
-        },
-        () => console.warn(`dayjs locale \`${lang}\` not found`)
-      )
-      loaded[lang].then(() => setIsLocaleLoaded(true))
+    const loadLocale = localeLoaders[locale]
+    if (!loadLocale) {
+      console.warn(`dayjs locale \`${locale}\` not found`)
+      return
     }
 
-  }, [isLocaleLoaded, lang])
+    let cancelled = false
+    const localeReady = loaded[locale] === true
+      ? Promise.resolve()
+      : (loaded[locale] ??= loadLocale().then(() => {
+          loaded[locale] = true
+        }))
 
-  return <span>{dayjs(date).format('ll')}</span>
+    localeReady.then(() => {
+      if (!cancelled) setActiveLocale(locale)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [locale])
+
+  return <span>{dayjs(date).locale(activeLocale).format('ll')}</span>
 }

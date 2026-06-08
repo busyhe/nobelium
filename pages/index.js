@@ -18,7 +18,7 @@ export async function getStaticProps () {
       postsToShow,
       showNext
     },
-    revalidate: 1
+    revalidate: clientConfig.revalidateTime
   }
 }
 
@@ -28,11 +28,11 @@ export default function Blog ({ postsToShow, page, showNext }) {
   return (
     <Container title={title} description={description}>
       <GalleryGrid>
-        {postsToShow.map(post => (
-          <BlogPost key={post.id} post={post} />
+        {postsToShow.map((post, index) => (
+          <BlogPost key={post.id} post={post} priority={index < 4} />
         ))}
-        {showNext && <Pagination page={page} showNext={showNext} />}
       </GalleryGrid>
+      {showNext && <Pagination page={page} showNext={showNext} />}
     </Container>
   )
 }

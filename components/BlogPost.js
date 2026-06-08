@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { useConfig } from '@/lib/config'
 import FormattedDate from '@/components/FormattedDate'
 
-const BlogPost = ({ post }) => {
+const BlogPost = ({ post, priority = false }) => {
   const BLOG = useConfig()
 
   return (
@@ -29,7 +29,8 @@ const BlogPost = ({ post }) => {
             height={500}
             src={post.page_cover}
             alt={BLOG.title}
-            priority={true}
+            priority={priority}
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
           />
           {/* 照片内边框 */}
           <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)] pointer-events-none" />

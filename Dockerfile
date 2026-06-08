@@ -1,27 +1,27 @@
-ARG NOTION_PAGE_ID = 
-# Install dependencies only when needed
-FROM node:14-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+ARG NODE_VERSION=22-alpine
 
-# Rebuild the source code only when needed
-FROM node:14-alpine AS builder
+FROM node:${NODE_VERSION} AS deps
+RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+FROM node:${NODE_VERSION} AS builder
 ARG NOTION_PAGE_ID
+ARG NOTION_ACCESS_TOKEN
+ENV NOTION_PAGE_ID=$NOTION_PAGE_ID
+ENV NOTION_ACCESS_TOKEN=$NOTION_ACCESS_TOKEN
+RUN corepack enable
 WORKDIR /app
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
-RUN yarn build
+RUN pnpm build
 
-ENV NODE_ENV production
-
+FROM node:${NODE_VERSION} AS runner
+ENV NODE_ENV=production
+RUN corepack enable
+WORKDIR /app
+COPY --from=builder /app ./
 EXPOSE 3000
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
-CMD ["yarn", "start"]
+CMD ["pnpm", "start"]

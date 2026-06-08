@@ -72,9 +72,10 @@ export default function BlogPost ({ post, blockMap, emailHash }) {
 
 export async function getStaticPaths () {
   const posts = await getAllPosts({ includePages: true })
+  const preRenderPosts = clientConfig.preRenderPosts ?? clientConfig.postsPerPage
   return {
-    paths: posts.map(row => `${clientConfig.path}/${row.slug}`),
-    fallback: true
+    paths: posts.slice(0, preRenderPosts).map(row => `${clientConfig.path}/${row.slug}`),
+    fallback: 'blocking'
   }
 }
 
@@ -93,6 +94,6 @@ export async function getStaticProps ({ params: { slug } }) {
 
   return {
     props: { post, blockMap, emailHash },
-    revalidate: 1
+    revalidate: clientConfig.revalidateTime
   }
 }

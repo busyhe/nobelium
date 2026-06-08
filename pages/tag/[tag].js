@@ -1,4 +1,5 @@
 import { getAllPosts, getAllTagsFromPosts } from '@/lib/notion'
+import { config } from '@/lib/server/config'
 import SearchLayout from '@/layouts/search'
 
 export default function Tag ({ tags, posts, currentTag }) {
@@ -18,7 +19,7 @@ export async function getStaticProps ({ params }) {
       posts: filteredPosts,
       currentTag
     },
-    revalidate: 1
+    revalidate: config.revalidateTime
   }
 }
 

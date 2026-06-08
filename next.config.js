@@ -1,8 +1,4 @@
 module.exports = {
-  experimental: {
-    workerThreads: false,
-    cpus: 1
-  },
   images: {
     dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
     remotePatterns: [

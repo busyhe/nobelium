@@ -11,7 +11,7 @@ const Page = ({ postsToShow, page, showNext }) => {
     <Container>
       <GalleryGrid>
         {postsToShow &&
-          postsToShow.map(post => <BlogPost key={post.id} post={post} />)}
+          postsToShow.map((post, index) => <BlogPost key={post.id} post={post} priority={index < 4} />)}
       </GalleryGrid>
       <Pagination page={page} showNext={showNext} />
     </Container>
@@ -19,12 +19,16 @@ const Page = ({ postsToShow, page, showNext }) => {
 }
 
 export async function getStaticProps (context) {
-  const { page } = context.params // Get Current Page No.
+  const page = Number(context.params.page) // Get Current Page No.
+  if (!Number.isInteger(page) || page < 2) return { notFound: true }
+
   const posts = await getAllPosts({ includePages: false })
   const postsToShow = posts.slice(
     config.postsPerPage * (page - 1),
     config.postsPerPage * page
   )
+  if (!postsToShow.length) return { notFound: true }
+
   const totalPosts = posts.length
   const showNext = page * config.postsPerPage < totalPosts
   return {
@@ -33,7 +37,7 @@ export async function getStaticProps (context) {
       postsToShow,
       showNext
     },
-    revalidate: 1
+    revalidate: config.revalidateTime
   }
 }
 
@@ -46,7 +50,7 @@ export async function getStaticPaths () {
     paths: Array.from({ length: totalPages - 1 }, (_, i) => ({
       params: { page: '' + (i + 2) }
     })),
-    fallback: true
+    fallback: 'blocking'
   }
 }
 
