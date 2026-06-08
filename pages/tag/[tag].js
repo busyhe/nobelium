@@ -1,8 +1,14 @@
 import { getAllPosts, getAllTagsFromPosts } from '@/lib/notion'
 import { config } from '@/lib/server/config'
 import SearchLayout from '@/layouts/search'
+import { useRouter } from 'next/router'
+import RouteSkeleton from '@/components/RouteSkeleton'
 
 export default function Tag ({ tags, posts, currentTag }) {
+  const router = useRouter()
+
+  if (router.isFallback) return <RouteSkeleton route={router.asPath} />
+
   return <SearchLayout tags={tags} posts={posts} currentTag={currentTag} />
 }
 

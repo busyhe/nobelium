@@ -9,14 +9,14 @@ import { createHash } from 'crypto'
 import Container from '@/components/Container'
 import Post from '@/components/Post'
 import Comments from '@/components/Comments'
+import RouteSkeleton from '@/components/RouteSkeleton'
 
 export default function BlogPost ({ post, blockMap, emailHash }) {
   const router = useRouter()
   const BLOG = useConfig()
   const locale = useLocale()
 
-  // TODO: It would be better to render something
-  if (router.isFallback) return null
+  if (router.isFallback) return <RouteSkeleton route={router.asPath} />
 
   const fullWidth = post.fullWidth ?? false
 
