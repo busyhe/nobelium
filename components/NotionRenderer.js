@@ -1,76 +1,60 @@
-import { createElement as h } from 'react'
+import { createElement as h, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { NotionRenderer as Renderer } from 'react-notion-x'
-import { getTextContent, getBlockValue, defaultMapImageUrl } from 'notion-utils'
+import { getTextContent, defaultMapImageUrl } from 'notion-utils'
 import { FONTS_SANS, FONTS_SERIF } from '@/consts'
 import { useConfig } from '@/lib/config'
-import Toggle from '@/components/notion-blocks/Toggle'
+import { prepareRecordMap } from '@/lib/content/record-map'
+import 'react-notion-x/src/styles.css'
+import styles from '@/styles/notion.module.css'
 
 const NotionCollection = dynamic(() => {
   return import('react-notion-x/third-party/collection').then(module => module.Collection)
 })
 
-// Lazy-load some heavy components & override the renderers of some block types
-const components = {
-  /* Lazy-load */
+const Mermaid = dynamic(() => import('@/components/notion-blocks/Mermaid'), { ssr: false })
+const Code = dynamic(() => import('react-notion-x/third-party/code').then(async module => {
+  await import('prismjs/themes/prism.css')
+  // Additional prismjs syntax
+  await Promise.all([
+    import('prismjs/components/prism-markup-templating'),
+    import('prismjs/components/prism-markup'),
+    import('prismjs/components/prism-bash'),
+    import('prismjs/components/prism-c'),
+    import('prismjs/components/prism-cpp'),
+    import('prismjs/components/prism-csharp'),
+    import('prismjs/components/prism-docker'),
+    import('prismjs/components/prism-java'),
+    import('prismjs/components/prism-js-templates'),
+    import('prismjs/components/prism-coffeescript'),
+    import('prismjs/components/prism-diff'),
+    import('prismjs/components/prism-git'),
+    import('prismjs/components/prism-go'),
+    import('prismjs/components/prism-graphql'),
+    import('prismjs/components/prism-handlebars'),
+    import('prismjs/components/prism-less'),
+    import('prismjs/components/prism-makefile'),
+    import('prismjs/components/prism-markdown'),
+    import('prismjs/components/prism-objectivec'),
+    import('prismjs/components/prism-ocaml'),
+    import('prismjs/components/prism-python'),
+    import('prismjs/components/prism-reason'),
+    import('prismjs/components/prism-rust'),
+    import('prismjs/components/prism-sass'),
+    import('prismjs/components/prism-scss'),
+    import('prismjs/components/prism-solidity'),
+    import('prismjs/components/prism-sql'),
+    import('prismjs/components/prism-stylus'),
+    import('prismjs/components/prism-swift'),
+    import('prismjs/components/prism-wasm'),
+    import('prismjs/components/prism-yaml')
+  ])
+  return module.Code
+}))
 
-  // Code block
-  Code: dynamic(async () => {
-    return function CodeSwitch (props) {
-      switch (getTextContent(props.block.properties.language)) {
-        case 'Mermaid':
-          return h(
-            dynamic(() => {
-              return import('@/components/notion-blocks/Mermaid').then(module => module.default)
-            }, { ssr: false }),
-            props
-          )
-        default:
-          return h(
-            dynamic(() => {
-              return import('react-notion-x/third-party/code').then(async module => {
-                // Additional prismjs syntax
-                await Promise.all([
-                  import('prismjs/components/prism-markup-templating'),
-                  import('prismjs/components/prism-markup'),
-                  import('prismjs/components/prism-bash'),
-                  import('prismjs/components/prism-c'),
-                  import('prismjs/components/prism-cpp'),
-                  import('prismjs/components/prism-csharp'),
-                  import('prismjs/components/prism-docker'),
-                  import('prismjs/components/prism-java'),
-                  import('prismjs/components/prism-js-templates'),
-                  import('prismjs/components/prism-coffeescript'),
-                  import('prismjs/components/prism-diff'),
-                  import('prismjs/components/prism-git'),
-                  import('prismjs/components/prism-go'),
-                  import('prismjs/components/prism-graphql'),
-                  import('prismjs/components/prism-handlebars'),
-                  import('prismjs/components/prism-less'),
-                  import('prismjs/components/prism-makefile'),
-                  import('prismjs/components/prism-markdown'),
-                  import('prismjs/components/prism-objectivec'),
-                  import('prismjs/components/prism-ocaml'),
-                  import('prismjs/components/prism-python'),
-                  import('prismjs/components/prism-reason'),
-                  import('prismjs/components/prism-rust'),
-                  import('prismjs/components/prism-sass'),
-                  import('prismjs/components/prism-scss'),
-                  import('prismjs/components/prism-solidity'),
-                  import('prismjs/components/prism-sql'),
-                  import('prismjs/components/prism-stylus'),
-                  import('prismjs/components/prism-swift'),
-                  import('prismjs/components/prism-wasm'),
-                  import('prismjs/components/prism-yaml')
-                ])
-                return module.Code
-              })
-            }),
-            props
-          )
-      }
-    }
-  }),
+// Component identities stay stable across parent renders.
+const components = {
+  Code: props => getTextContent(props.block.properties.language) === 'Mermaid' ? h(Mermaid, props) : h(Code, props),
   // Database block
   Collection: function Collection (props) {
     // Post renders the page metadata. Skipping Notion's hidden, async property
@@ -80,7 +64,7 @@ const components = {
   },
   // Equation block & inline variant
   Equation: dynamic(() => {
-    return import('react-notion-x/third-party/equation').then(module => module.Equation)
+    return Promise.all([import('react-notion-x/third-party/equation'), import('katex/dist/katex.min.css')]).then(([module]) => module.Equation)
   }),
   // PDF (Embed block)
   Pdf: dynamic(() => {
@@ -94,13 +78,7 @@ const components = {
         return <TweetEmbed tweetId={id} options={{ theme: 'dark' }} />
       }
     })
-  }),
-
-  /* Overrides */
-
-  toggle_nobelium: ({ block, children }) => (
-    <Toggle block={block}>{children}</Toggle>
-  )
+  })
 }
 
 const mapPageUrl = id => `https://www.notion.so/${id.replace(/-/g, '')}`
@@ -120,21 +98,10 @@ export default function NotionRenderer (props) {
     'serif': FONTS_SERIF
   }[config.font]
 
-  // Mark block types to be custom rendered by appending a suffix
-  if (props.recordMap) {
-    for (const blockEntry of Object.values(props.recordMap.block)) {
-      const block = getBlockValue(blockEntry)
-      if (!block) continue
-      switch (block?.type) {
-        case 'toggle':
-          block.type += '_nobelium'
-          break
-      }
-    }
-  }
+  const recordMap = useMemo(() => prepareRecordMap(props.recordMap), [props.recordMap])
 
   return (
-    <>
+    <div className={styles.content}>
       <style jsx global>
         {`
         .notion {
@@ -147,7 +114,8 @@ export default function NotionRenderer (props) {
         mapImageUrl={defaultMapImageUrl}
         mapPageUrl={mapPageUrl}
         {...props}
+        recordMap={recordMap}
       />
-    </>
+    </div>
   )
 }

@@ -17,44 +17,6 @@ class MyDocument extends Document {
     return (
       <Html lang={config.lang} className={cn(initialColorScheme)}>
         <Head>
-          {config.font && config.font === 'serif'
-            ? (
-            <>
-              <link
-                rel="preload"
-                href="/fonts/SourceSerif.var.woff2"
-                as="font"
-                type="font/woff2"
-                crossOrigin="anonymous"
-              />
-              <link
-                rel="preload"
-                href="/fonts/SourceSerif-Italic.var.woff2"
-                as="font"
-                type="font/woff2"
-                crossOrigin="anonymous"
-              />
-            </>
-              )
-            : (
-            <>
-              <link
-                rel="preload"
-                href="/fonts/IBMPlexSansVar-Roman.woff2"
-                as="font"
-                type="font/woff2"
-                crossOrigin="anonymous"
-              />
-              <link
-                rel="preload"
-                href="/fonts/IBMPlexSansVar-Italic.woff2"
-                as="font"
-                type="font/woff2"
-                crossOrigin="anonymous"
-              />
-            </>
-              )}
-
           {/* Latin fonts are bundled locally; CJK uses the system fallbacks in consts.js. */}
           <link rel="icon" href="/favicon.png" />
           <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/feed"></link>

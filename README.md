@@ -16,7 +16,13 @@ This fork ports the local Photoyoshi gallery motion and interaction to React whi
 - The gallery uses a system sans-serif stack; archive and standalone page fonts use bundled IBM Plex Sans / Source Serif files and system CJK fallbacks. Reduced motion skips the splash and morphing. Photos remain usable if WebGL is unavailable or its context is lost.
 - Motion implementation and source parameters are documented in `docs/photoyoshi-motion.md`.
 
-Run `pnpm dev` for local development, `pnpm lint` for static checks, and `pnpm build` for a production build. Content rendering and static generation require access to the configured Notion database.
+Run `pnpm dev` for local development. Run `pnpm lint` and `pnpm test` for the offline quality checks (also required by the Quality workflow). `pnpm build` creates a production build, generates a complete sitemap and runs `pnpm check:build` to enforce HTML/CSS/detail-data budgets and sitemap coverage. Content rendering and static generation require access to the configured Notion database.
+
+The build wrapper shares one content-index snapshot between two static-generation workers and deletes it afterwards. Runtime caches remain in memory with a 60-second TTL (`NOTION_CACHE_TTL_MS`) and bounded block entries; concurrent requests share pending loads, and failed loads can be retried. Build the site through `pnpm build` so the sitemap receives the matching content snapshot. Published fallback routes are included even when they are not prerendered. Newly published URLs enter the sitemap on the next build.
+
+The default category for untagged stories uses `/tag/~journal`; a real Notion tag named `Journal` remains independent. The old `/tag/Journal` redirects when only the default category exists. Search state uses `?q=...`, and viewer links use one-based `?photo=...` indices. Browser storage is optional: blocked storage falls back to normal navigation. Returning to the gallery restores its mode and position and skips the splash.
+
+The build budgets are 120 gallery frames, 200 KiB home HTML, 64 KiB initial home CSS, and 128 KiB per photography detail JSON. The existing analytics configuration can receive Web Vitals through Next's `reportWebVitals`; no additional analytics service is enabled. Runtime acceptance checks are documented in `docs/optimization-validation.md`.
 
 Notion integration uses `notion-client`, `notion-utils`, and `react-notion-x` 8.0.8. API requests go to `https://app.notion.com/api/v3`, replacing the legacy `www.notion.so` endpoint that returned Cloudflare 403 responses. The image allowlist includes `app.notion.com` for the updated image proxy. Local previews use the same live Notion adapters as production, without sample posts or fallback fixtures. Keep `NOTION_PAGE_ID` in `.env.local`; a public database does not need an access token.
 

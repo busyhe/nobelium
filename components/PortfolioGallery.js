@@ -4,6 +4,10 @@ import Link from 'next/link'
 import { useConfig } from '@/lib/config'
 import Photo from '@/components/Photo'
 import { createGalleryMotion } from '@/lib/gallery/motion'
+import { groupPosts } from '@/lib/content/categories'
+import { galleryWindow } from '@/lib/gallery/window'
+import { readSession, writeSession } from '@/lib/session'
+import { sitePath } from '@/lib/urls'
 
 function ViewIcon ({ full = false }) {
   return full ? (
@@ -22,61 +26,38 @@ export default function PortfolioGallery ({ posts = [] }) {
   const [activeCategory, setActiveCategory] = useState(null)
   const [ready, setReady] = useState(false)
   const [progress, setProgress] = useState(0)
-  // Include the first desktop viewport in the HTML; mount other photos nearby.
-  const [visibleSections, setVisibleSections] = useState(() => new Set([0, 1, 2, 3]))
-  const groups = useMemo(() => {
-    const result = new Map()
-    posts.forEach(post => {
-      const tags = post.tags?.length ? new Set(post.tags) : ['Journal']
-      for (const tag of tags) {
-        if (!result.has(tag)) result.set(tag, [])
-        result.get(tag).push(post)
-      }
+  const [anchor, setAnchor] = useState(0)
+  const [imagesMounted, setImagesMounted] = useState(false)
+  const groups = useMemo(() => groupPosts(posts), [posts])
+  const sections = useMemo(() => galleryWindow(groups, anchor), [groups, anchor])
+  const active = groups.find(group => group.slug === activeCategory) || groups[0]
+
+  useEffect(() => {
+    if (!groups.length) return
+    const saved = readSession('gallery')
+    const motion = createGalleryMotion(rootRef.current, {
+      initial: saved,
+      onWindow: value => { setAnchor(value); setImagesMounted(true) },
+      onCategory: setActiveCategory,
+      onReady: () => setReady(true),
+      onProgress: setProgress,
+      onMode: setMode
     })
-    return [...result].map(([name, items]) => ({ name, posts: items }))
-  }, [posts])
-  const sections = useMemo(() => groups.length ? Array.from({ length: Math.max(2, Math.ceil(12 / groups.length)) }, (_, cycle) => groups.map(group => ({
-    ...group, key: `${cycle}-${group.name}`,
-    columns: [0, 1].map(column => Array.from({ length: 5 }, (_, row) => group.posts[(cycle * 10 + column * 5 + row) % group.posts.length]))
-  }))).flat() : [], [groups])
-  const active = groups.find(group => group.name === activeCategory) || groups[0]
-
-  useEffect(() => {
-    if (!sections.length) return
-    const motion = createGalleryMotion(rootRef.current, { onCategory: setActiveCategory, onReady: () => setReady(true), onProgress: setProgress })
     motionRef.current = motion
-    return () => { motion.destroy(); motionRef.current = null }
-  }, [sections])
-
-  useEffect(() => {
-    if (!sections.length) return
-    if (!('IntersectionObserver' in window)) {
-      const frame = window.requestAnimationFrame(() => setVisibleSections(new Set(sections.map((_, index) => index))))
-      return () => window.cancelAnimationFrame(frame)
+    return () => {
+      writeSession('gallery', motion.snapshot())
+      motion.destroy()
+      motionRef.current = null
     }
+  }, [groups])
 
-    const root = rootRef.current
-    const elements = [...root.querySelectorAll('.gallery-section')]
-    const indexes = new Map(elements.map((element, index) => [element, index]))
-    const observer = new IntersectionObserver(entries => {
-      setVisibleSections(previous => {
-        const next = new Set(previous)
-        entries.forEach(entry => {
-          const index = indexes.get(entry.target)
-          if (entry.isIntersecting) next.add(index)
-          else next.delete(index)
-        })
-        return next.size === previous.size && [...next].every(index => previous.has(index)) ? previous : next
-      })
-    }, { root: root.querySelector('.gallery-stage'), rootMargin: '0px 100%' })
-    elements.forEach(element => observer.observe(element))
-    return () => observer.disconnect()
-  }, [sections])
+  useEffect(() => { motionRef.current?.refresh() }, [sections])
 
   function openPost (post) {
     if (!ready) return
     // Use the same detail route and shared route-loading UI as the Index cards.
-    router.push(`${BLOG.path}/${post.slug}`)
+    writeSession('gallery', motionRef.current?.snapshot())
+    router.push(sitePath(BLOG.path, encodeURIComponent(post.slug))).catch(() => {})
   }
 
   if (!posts.length) return <section className="gallery-empty"><span className="viewfinder" /><h1>故事即将开始。</h1><p>新的作品会出现在这里。</p></section>
@@ -86,14 +67,14 @@ export default function PortfolioGallery ({ posts = [] }) {
       <div className="gallery-board">
         <div className="gallery-stage" role="region" aria-label="照片墙，可拖动或滚动浏览，方向键移动，空格翻页" tabIndex={0}>
           <div className="gallery-track">
-            {sections.map((section, sectionIndex) => (
-              <div className="gallery-section" key={section.key} data-category={section.name} style={{ '--section-index': sectionIndex }}>
+            {sections.map(section => (
+              <div className="gallery-section" key={section.slot} data-category={section.slug} data-logical={section.logical} style={{ '--section-index': section.logical }}>
                 {section.columns.map((column, columnIndex) => (
                   <div className="gallery-column" key={columnIndex}>
                     {column.map((post, row) => (
-                      <div className="gallery-cell" key={`${post.id}-${row}`}>
-                        <button type="button" className="gallery-frame" data-gallery-image data-post-id={post.id} data-category={section.name} data-selected={section.name === (active?.name)} data-aspect="1.5" onClick={() => openPost(post)} onFocus={event => motionRef.current?.focusCategory(section.name, event.currentTarget)} aria-label={`打开篇章：${post.title}`} tabIndex={sectionIndex < groups.length ? 0 : -1}>
-                          {visibleSections.has(sectionIndex) && <Photo src={post.page_cover} title={post.title} index={row} loading="lazy" sizes={mode === 'full' && row === 2 && sectionIndex % 2 === 0 && columnIndex === 0 ? '(max-width: 679px) 100vw, 60vw' : '(max-width: 679px) 20vw, (max-aspect-ratio: 1.35) 10vw, 7vw'} />}
+                      <div className="gallery-cell" key={row}>
+                        <button type="button" className="gallery-frame" data-gallery-image data-post-id={post.id} data-category={section.slug} data-selected={section.slug === active?.slug} data-aspect="1.5" onClick={() => openPost(post)} onFocus={event => motionRef.current?.focusCategory(section.slug, event.currentTarget)} aria-label={`打开篇章：${post.title}`} tabIndex={-1}>
+                          {(imagesMounted ? section.logical >= anchor - 2 && section.logical <= anchor + 5 : section.logical >= 0 && section.logical < 4 && row === 2) && <Photo src={post.page_cover} title={post.title} index={row} loading="lazy" sizes={mode === 'full' && row === 2 && section.slot % 2 === 0 && columnIndex === 0 ? '(max-width: 679px) 100vw, 60vw' : '(max-width: 679px) 20vw, (max-aspect-ratio: 1.35) 10vw, 7vw'} />}
                         </button>
                       </div>
                     ))}
@@ -107,12 +88,12 @@ export default function PortfolioGallery ({ posts = [] }) {
           <span className="viewfinder gallery-scope gallery-scope--grid" aria-hidden="true" />
           <span className="viewfinder gallery-scope gallery-scope--full" aria-hidden="true" />
           <div className="gallery-category">
-            <h1 className="gallery-category-title"><Link href={`${BLOG.path}/tag/${encodeURIComponent(active.name)}`} prefetch={false} aria-label={`查看 ${active.name} 分类的 ${active.posts.length} 篇作品`}><span>{active.name}</span><sup>({active.posts.length})</sup></Link></h1>
+            <h1 className="gallery-category-title"><Link href={sitePath(BLOG.path, `tag/${encodeURIComponent(active.slug)}`)} prefetch={false} aria-label={`查看 ${active.name} 分类的 ${active.posts.length} 篇作品`}><span>{active.name}</span><sup>({active.posts.length})</sup></Link></h1>
             <p>/{posts.length}Stories</p>
           </div>
           <div className="gallery-mode" role="group" aria-label="浏览模式">
-            <button type="button" aria-label="网格浏览" aria-pressed={mode === 'grid'} disabled={!ready} onClick={() => { motionRef.current?.setMode('grid'); setMode('grid') }}><ViewIcon /></button>
-            <button type="button" aria-label="大图浏览" aria-pressed={mode === 'full'} disabled={!ready} onClick={() => { motionRef.current?.setMode('full'); setMode('full') }}><ViewIcon full /></button>
+            <button type="button" aria-label="网格浏览" aria-pressed={mode === 'grid'} disabled={!ready} onClick={() => { motionRef.current?.setMode('grid') }}><ViewIcon /></button>
+            <button type="button" aria-label="大图浏览" aria-pressed={mode === 'full'} disabled={!ready} onClick={() => { motionRef.current?.setMode('full') }}><ViewIcon full /></button>
           </div>
         </div>
         <div className="gallery-page-cover" />

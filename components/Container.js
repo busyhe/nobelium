@@ -4,22 +4,28 @@ import { useConfig } from '@/lib/config'
 import Head from 'next/head'
 import PropTypes from 'prop-types'
 import cn from 'classnames'
+import { useRouter } from 'next/router'
+import { canonicalUrl, sitePath } from '@/lib/urls'
 
-const Container = ({ children, layout, fullWidth, ...customMeta }) => {
+const Container = ({ children, layout, fullWidth, headerRef, ...customMeta }) => {
   const BLOG = useConfig()
   const immersive = layout === 'gallery'
+  const router = useRouter()
 
-  const url = BLOG.path.length ? `${BLOG.link}/${BLOG.path}` : BLOG.link
   const meta = {
     title: BLOG.title,
     description: BLOG.description,
     type: 'website',
     ...customMeta
   }
+  const url = canonicalUrl(BLOG.link, meta.slug ? sitePath(BLOG.path, encodeURIComponent(meta.slug)) : router.asPath)
+  const image = meta.image || `${BLOG.ogImageGenerateURL}/${encodeURIComponent(meta.title)}.png?theme=dark&md=1&fontSize=125px`
   return (
     <div>
       <Head>
         <title>{meta.title}</title>
+        <link rel="canonical" href={url} />
+        {!immersive && <link rel="preload" href={BLOG.font === 'serif' ? '/fonts/SourceSerif.var.woff2' : '/fonts/IBMPlexSansVar-Roman.woff2'} as="font" type="font/woff2" crossOrigin="anonymous" />}
         {/* <meta content={BLOG.darkBackground} name="theme-color" /> */}
         <meta name="robots" content="follow, index" />
         <meta charSet="UTF-8" />
@@ -38,13 +44,11 @@ const Container = ({ children, layout, fullWidth, ...customMeta }) => {
         <meta property="og:description" content={meta.description} />
         <meta
           property="og:url"
-          content={meta.slug ? `${url}/${meta.slug}` : url}
+          content={url}
         />
         <meta
           property="og:image"
-          content={`${BLOG.ogImageGenerateURL}/${encodeURIComponent(
-            meta.title
-          )}.png?theme=dark&md=1&fontSize=125px&images=https%3A%2F%2Fnobelium.vercel.app%2Flogo-for-dark-bg.svg`}
+          content={image}
         />
         <meta property="og:type" content={meta.type} />
         <meta name="twitter:card" content="summary_large_image" />
@@ -52,9 +56,7 @@ const Container = ({ children, layout, fullWidth, ...customMeta }) => {
         <meta name="twitter:title" content={meta.title} />
         <meta
           name="twitter:image"
-          content={`${BLOG.ogImageGenerateURL}/${encodeURIComponent(
-            meta.title
-          )}.png?theme=dark&md=1&fontSize=125px&images=https%3A%2F%2Fnobelium.vercel.app%2Flogo-for-dark-bg.svg`}
+          content={image}
         />
         {meta.type === 'article' && (
           <>
@@ -70,7 +72,7 @@ const Container = ({ children, layout, fullWidth, ...customMeta }) => {
         className={cn('wrapper', { 'wrapper--gallery': immersive }, BLOG.font === 'serif' ? 'font-serif' : 'font-sans')}
       >
         <a href="#main-content" className="skip-link">跳至内容</a>
-        <Header immersive={immersive} />
+        <Header immersive={immersive} headerRef={headerRef} />
         <main className={cn(
           'site-main',
           immersive ? 'site-main--gallery' : layout === 'blog' ? 'site-main--post' : 'site-main--index',

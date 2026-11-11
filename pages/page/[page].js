@@ -31,7 +31,7 @@ export async function getStaticProps (context) {
     config.postsPerPage * (page - 1),
     config.postsPerPage * page
   )
-  if (!postsToShow.length) return { notFound: true }
+  if (!postsToShow.length) return { notFound: true, revalidate: config.revalidateTime }
 
   const totalPosts = posts.length
   const totalPages = Math.ceil(totalPosts / config.postsPerPage)

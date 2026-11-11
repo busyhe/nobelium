@@ -1,43 +1,21 @@
-import 'prismjs/themes/prism.css'
-import 'react-notion-x/styles.css'
-import 'katex/dist/katex.min.css'
 import App from 'next/app'
 import '@/styles/globals.css'
 import '@/styles/gallery.css'
-import '@/styles/notion.css'
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { useState } from 'react'
 import loadLocale from '@/assets/i18n'
 import { ConfigProvider } from '@/lib/config'
 import { LocaleProvider } from '@/lib/locale'
 import { prepareDayjs } from '@/lib/dayjs'
 import { ThemeProvider } from '@/lib/theme'
 import Scripts from '@/components/Scripts'
+import RouteStatus from '@/components/RouteStatus'
 
 const Ackee = dynamic(() => import('@/components/Ackee'), { ssr: false })
 const Gtag = dynamic(() => import('@/components/Gtag'), { ssr: false })
 
 export default function MyApp ({ Component, pageProps, config, locale }) {
-  const router = useRouter()
   const [previousPath, setPreviousPath] = useState(null)
-
-  useEffect(() => {
-    const handleRouteChangeStart = (url, { shallow } = {}) => {
-      const nextPath = String(url || '').split(/[?#]/)[0]
-      const currentPath = String(router.asPath || '').split(/[?#]/)[0]
-
-      if (shallow || nextPath === currentPath) return
-
-      setPreviousPath(router.asPath)
-    }
-
-    router.events.on('routeChangeStart', handleRouteChangeStart)
-
-    return () => {
-      router.events.off('routeChangeStart', handleRouteChangeStart)
-    }
-  }, [router.asPath, router.events])
 
   return (
     <ConfigProvider value={config}>
@@ -53,6 +31,7 @@ export default function MyApp ({ Component, pageProps, config, locale }) {
             )}
             {process.env.VERCEL_ENV === 'production' && config?.analytics?.provider === 'ga' && <Gtag />}
             <Component {...pageProps} previousPath={previousPath} />
+            <RouteStatus onNavigate={setPreviousPath} />
           </>
         </ThemeProvider>
       </LocaleProvider>
@@ -68,8 +47,15 @@ MyApp.getInitialProps = async ctx => {
   prepareDayjs(config.timezone)
 
   return {
-    ...App.getInitialProps(ctx),
+    ...await App.getInitialProps(ctx),
     config,
     locale: await loadLocale('basic', config.lang)
+  }
+}
+
+export function reportWebVitals ({ name, value, id }) {
+  // Reuse the configured analytics script; no additional endpoint or identifier.
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    window.gtag('event', name, { event_category: 'Web Vitals', event_label: id, value: Math.round(name === 'CLS' ? value * 1000 : value), non_interaction: true })
   }
 }

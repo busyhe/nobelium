@@ -2,13 +2,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useConfig } from '@/lib/config'
 
-export default function Header ({ immersive = false }) {
+export default function Header ({ immersive = false, headerRef }) {
   const BLOG = useConfig()
   const { pathname } = useRouter()
   const isPost = pathname === '/[slug]'
 
   return (
-    <header className={`site-header${immersive ? ' site-header--immersive' : ''}`}>
+    <header ref={headerRef} className={`site-header${immersive ? ' site-header--immersive' : ''}`}>
       <Link href={BLOG.path || '/'} className="site-wordmark" aria-label={`${BLOG.author} — 首页`}>
         {BLOG.author}<span aria-hidden="true">®</span>
       </Link>

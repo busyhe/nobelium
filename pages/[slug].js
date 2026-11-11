@@ -2,15 +2,18 @@ import { clientConfig } from '@/lib/server/config'
 
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { getAllPosts, getPostBlocks } from '@/lib/notion'
 import { getPostPhotos } from '@/lib/notion/getPostPhotos'
 import { useLocale } from '@/lib/locale'
 import { useConfig } from '@/lib/config'
 import Container from '@/components/Container'
-import Post from '@/components/Post'
-import Comments from '@/components/Comments'
 import RouteSkeleton from '@/components/RouteSkeleton'
 import StoryGallery from '@/components/gallery/StoryGallery'
+import { getDetailProps } from '@/lib/content/models'
+
+const Post = dynamic(() => import('@/components/Post'))
+const Comments = dynamic(() => import('@/components/Comments'))
 
 export default function BlogPost ({ post, blockMap, photos, previousPath }) {
   const router = useRouter()
@@ -31,7 +34,8 @@ export default function BlogPost ({ post, blockMap, photos, previousPath }) {
       title={post.title}
       description={post.summary}
       slug={post.slug}
-      // date={new Date(post.publishedAt).toISOString()}
+      date={new Date(post.date).toISOString()}
+      image={post.page_cover}
       type="article"
       fullWidth={fullWidth}
     >
@@ -74,12 +78,12 @@ export async function getStaticProps ({ params: { slug } }) {
   const posts = await getAllPosts({ includePages: true })
   const post = posts.find(t => t.slug === slug)
 
-  if (!post) return { notFound: true }
+  if (!post) return { notFound: true, revalidate: clientConfig.revalidateTime }
 
   const blockMap = await getPostBlocks(post.id)
 
   return {
-    props: { post, blockMap, photos: post.type?.includes('Page') ? [] : getPostPhotos(post, blockMap) },
+    props: getDetailProps(post, blockMap, post.type?.includes('Page') ? [] : getPostPhotos(post, blockMap)),
     revalidate: clientConfig.revalidateTime
   }
 }

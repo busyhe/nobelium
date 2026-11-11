@@ -1,6 +1,6 @@
 /* NOTION CSS OVERRIDE */
 
-:root {
+.content {
   --no-leading: 2rem;
 
   /* Notion colors */
@@ -26,7 +26,7 @@
   --notion-red_background: rgb(253, 235, 236);
 }
 
-:root.dark {
+:global(.dark) .content {
   /* Notion colors */
 
   --notion-gray: rgb(155, 155, 155);
@@ -50,32 +50,32 @@
   --notion-red_background: rgb(82, 46, 42);
 }
 
-.notion {
+.content :global(.notion) {
   color: var(--ink);
   background: transparent;
   overflow-wrap: break-word;
 }
-.notion,
-.notion-text,
-.notion-quote,
-.notion-h-title {
+.content :global(.notion),
+.content :global(.notion-text),
+.content :global(.notion-quote),
+.content :global(.notion-h-title) {
   @apply p-0;
   @apply my-3;
   line-height: var(--no-leading);
 }
-.notion-page-link {
+.content :global(.notion-page-link) {
   color: inherit;
 }
 
-svg.notion-page-icon {
+.content :global(svg.notion-page-icon) {
   @apply hidden;
 }
 
-svg + .notion-page-title-text {
+.content :global(svg + .notion-page-title-text) {
   @apply border-b-0;
 }
 
-.notion-callout > .notion-page-icon-inline {
+.content :global(.notion-callout > .notion-page-icon-inline) {
   max-width: unset;
   max-height: unset;
   height: var(--no-leading);
@@ -86,174 +86,116 @@ svg + .notion-page-title-text {
   font-size: 1.05em;
 }
 
-.notion-callout-text {
+.content :global(.notion-callout-text) {
   @apply min-w-0;
   padding-left: 2px;
   padding-right: 2px;
 }
 
-.notion-bookmark {
+.content :global(.notion-bookmark) {
   @apply border;
   @apply border-gray-100;
   color: inherit;
 }
 
-.notion-bookmark .notion-bookmark-title,
-.notion-bookmark .notion-bookmark-link div {
+.content :global(.notion-bookmark .notion-bookmark-title),
+.content :global(.notion-bookmark .notion-bookmark-link div) {
   @apply text-gray-900 dark:text-gray-200;
 }
 
-.notion-bookmark .notion-bookmark-description {
+.content :global(.notion-bookmark .notion-bookmark-description) {
   @apply text-gray-600 dark:text-gray-300;
 }
 
-pre[class*='language-'] {
+.content :global(pre[class*='language-']) {
   line-height: inherit;
 }
 
-.notion-bookmark:hover {
+.content :global(.notion-bookmark:hover) {
   @apply border-blue-400;
 }
-.notion-viewport {
+.content :global(.notion-viewport) {
   z-index: -10;
 }
-.notion-asset-caption {
+.content :global(.notion-asset-caption) {
   @apply text-center;
   @apply text-gray-500 dark:text-gray-400;
 }
-.notion-asset-wrapper {
+.content :global(.notion-asset-wrapper) {
   width: 100%;
 }
-.notion-asset-wrapper>div {
+.content :global(.notion-asset-wrapper>div) {
   height: auto !important;
 }
-.notion-asset-wrapper-tweet iframe {
+.content :global(.notion-asset-wrapper-tweet iframe) {
   @apply bg-day dark:bg-night;
 }
-.notion-full-width {
+.content :global(.notion-full-width) {
   @apply px-0;
 }
-.notion-page {
+.content :global(.notion-page) {
   @apply w-auto;
   @apply px-0;
   max-width: none;
 }
-.notion-quote {
+.content :global(.notion-quote) {
   padding: 0.2em 0.9em;
 }
-.notion-hr {
+.content :global(.notion-hr) {
   border-top-width: 1px;
   border-top-style: solid;
 }
-.dark .notion-hr {
+:global(.dark) .content :global(.notion-hr) {
   border-top-color: rgba(255, 255, 255, 0.13);
 }
-.notion-list {
+.content :global(.notion-list) {
   width: 100%;
 }
-.notion-collection {
+.content :global(.notion-collection) {
   @apply max-w-full;
 }
-.notion-collection > .notion-collection-header {
+.content :global(.notion-collection > .notion-collection-header) {
   @apply px-0 !important;
 }
-.notion-collection > .notion-table {
+.content :global(.notion-collection > .notion-table) {
   @apply max-w-full !important;
 }
-.notion-collection > .notion-table > .notion-table-view {
+.content :global(.notion-collection > .notion-table > .notion-table-view) {
   @apply px-0 !important;
 }
-.notion-collection-view-type {
+.content :global(.notion-collection-view-type) {
   @apply hidden;
 }
-.notion-collection-row {
+.content :global(.notion-collection-row) {
   @apply hidden;
 }
 
-.notion-property-checkbox {
+.content :global(.notion-property-checkbox) {
   width: 24px;
   margin-right: 2px !important;
   display: flex;
   justify-content: center;
 }
 
-.notion-to-do-body {
+.content :global(.notion-to-do-body) {
   padding-left: 2px;
   padding-right: 2px;
 }
 
-.notion-list {
+.content :global(.notion-list) {
   padding-inline-start: 28px;
 }
 
-.notion-list > li {
+.content :global(.notion-list > li) {
   padding-left: 2px;
   padding-right: 2px;
 }
 
-/* Every block */
-
-.nobelium-block {
-  @apply my-0.5; /* OVERRIDES */
-}
-
-.nobelium-block .nobelium-block {
-  @apply mt-1 mb-0;
-}
-
-/* Toggle block */
-
-.nobelium-toggle {
-  @apply w-full;
-  @apply py-0; /* OVERRIDES */
-}
-
-.nobelium-toggle ::marker {
-  content: '';
-}
-
-.nobelium-toggle > summary {
-  @apply cursor-pointer flex items-start;
-}
-
-.nobelium-toggle-empty > summary {
-  @apply cursor-default;
-}
-
-.nobelium-toggle-triangle {
-  @apply flex-none w-7 text-center;
-  line-height: inherit;
-}
-
-.nobelium-toggle-triangle svg {
-  @apply inline-block fill-current;
-  width: 0.6875em;
-  height: 0.6875em;
-  backface-visibility: hidden;
-  transition: transform 200ms ease-out 0s;
-  transform: rotateZ(90deg);
-}
-
-.nobelium-toggle[open]:not(.nobelium-toggle-empty) > * > .nobelium-toggle-triangle svg {
-  transform: rotateZ(180deg);
-}
-
-.nobelium-toggle-empty > * > .nobelium-toggle-triangle svg {
-  @apply opacity-50;
-}
-
-.nobelium-toggle-title {
-  @apply flex-1;
-}
-
-.nobelium-toggle-content {
-  @apply pl-7 mt-0.5;
-}
-
-.nobelium-toggle-content > * {
-  @apply my-0.5; /* OVERRIDES */
-}
-
-.nobelium-toggle-content > :last-child {
-  @apply mb-0;
-}
+/* Preserve the compact disclosure layout using v8's native toggle markup. */
+.content :global(.notion-toggle) { width: 100%; padding: 0; margin: .125rem 0; }
+.content :global(.notion-toggle > summary) { display: flex; align-items: start; cursor: pointer; list-style: none; }
+.content :global(.notion-toggle > summary::-webkit-details-marker) { display: none; }
+.content :global(.notion-toggle > summary::before) { content: ''; flex: 0 0 auto; width: 0; height: 0; margin: 12px 12px 0 8px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid currentColor; transition: transform .2s ease-out; }
+.content :global(.notion-toggle[open] > summary::before) { transform: rotate(90deg); }
+.content :global(.notion-toggle > div) { margin: .125rem 0 0; padding-left: 1.75rem; }
+@media (prefers-reduced-motion: reduce) { .content :global(.notion-toggle > summary::before) { transition: none; } }

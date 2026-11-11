@@ -7,7 +7,7 @@ export default function BlogPost ({ post, priority = false, index = 0 }) {
   const BLOG = useConfig()
 
   return (
-    <Link href={`${BLOG.path}/${post.slug}`} className="archive-card" prefetch={false}>
+    <Link href={`${BLOG.path}/${encodeURIComponent(post.slug)}`} data-post-id={post.id} className="archive-card" prefetch={false}>
       <article>
         <div className="archive-card-photo">
           <Photo src={post.page_cover} title={post.title} priority={priority} index={index} />

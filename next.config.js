@@ -30,6 +30,10 @@ module.exports = {
     ]
   },
   turbopack: {},
+  experimental: {
+    cpus: 2,
+    staticGenerationMaxConcurrency: 2
+  },
   async headers() {
     return [
       {

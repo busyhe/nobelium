@@ -1,236 +1,80 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { gsap } from 'gsap'
+import { useRouter } from 'next/router'
+import { getImageProps } from 'next/image'
 import Photo from '@/components/Photo'
 import { useConfig } from '@/lib/config'
-import { MOTION } from '@/lib/gallery/motion'
+import notionImageLoader from '@/lib/notion/image-loader'
+import { createViewerMotion } from '@/lib/gallery/viewer-motion'
+import { nearbyPhotos, photoIndex } from '@/lib/gallery/window'
 
-export default function GalleryViewer ({ post, photos = [], open, onClose, onExited, boardRef }) {
+const imageSizes = '(max-width: 679px) 100vw, 70vw'
+
+export default function GalleryViewer ({ post, photos = [], open, onClose, onExited, headerRef }) {
   const BLOG = useConfig()
+  const router = useRouter()
   const rootRef = useRef(null)
   const controllerRef = useRef(null)
+  const callbacks = useRef({ onClose, onExited })
+  const writtenQuery = useRef(null)
   const [index, setIndex] = useState(0)
   const [zoomed, setZoomed] = useState(false)
-  const photosRef = useRef(photos)
+  const [failed, setFailed] = useState(null)
+  const [retryKey, setRetryKey] = useState(0)
   const items = photos.length ? photos : [{ id: post.id, title: post.title }]
   const photo = items[index] || items[0]
-  const closeRef = useRef(onClose)
-  useEffect(() => { closeRef.current = onClose }, [onClose])
 
+  useEffect(() => { callbacks.current = { onClose, onExited } }, [onClose, onExited])
   useEffect(() => {
-    const root = rootRef.current
-    const stage = root.querySelector('.viewer-stage')
-    const frame = root.querySelector('.viewer-image')
-    const rail = root.querySelector('.viewer-rail')
-    let thumbs = [...root.querySelectorAll('.viewer-thumb')]
-    const header = root.querySelector('.viewer-header')
-    const board = boardRef?.current?.board
-    const mainHeader = root.closest('.wrapper').querySelector('.site-header')
-    mainHeader.inert = true
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const state = { position: 0, target: 0, zoom: 0, zoomTransition: 0, reduced: reduced.matches, mouseX: -10, mouseY: -10, mousePower: 0.1 }
-    const mouse = { x: -10, y: -10 }
-    const previousMouse = { ...mouse }
-    const ctx = gsap.context(() => {}, root)
-    const animate = callback => ctx.add(callback)
-    let width, height, mobile, horizontal, step, aspect = 1.5, renderer, disposed = false, paused = false, active = 0, pointer, dragged = false
-    let baseWidth, baseHeight, zoomTween
-    const lastIndex = () => Math.max(0, photosRef.current.length - 1)
-    const layout = () => {
-      width = root.clientWidth
-      height = root.clientHeight
-      mobile = width < 680
-      horizontal = mobile && height >= width
-      const first = thumbs[0].getBoundingClientRect()
-      const oldStep = step || 1
-      step = (horizontal ? first.width : first.height) + 10
-      state.target = state.target / oldStep * step
-      state.position = state.position / oldStep * step
-      if (horizontal) {
-        baseWidth = aspect > 1 ? width - 40 : height * 0.53 * aspect
-        baseHeight = baseWidth / aspect
-      } else if (aspect > 1) {
-        baseHeight = width * 0.401041666667
-        if (baseHeight > height) baseHeight *= height / width + 0.2
-        baseWidth = baseHeight * aspect
-      } else {
-        baseHeight = height * 0.94537037037
-        if (baseHeight * aspect > width * 0.8) baseHeight *= 0.5
-        baseWidth = baseHeight * aspect
-      }
-      frame.style.width = `${baseWidth}px`
-      frame.style.height = `${baseHeight}px`
-      frame.style.top = horizontal ? 'calc(50% - 80px)' : '50%'
-      rail.style.padding = horizontal ? `0 ${width / 2 - first.width / 2}px` : `${height / 2 - first.height / 2}px 0`
-      if (state.zoom) gsap.set(frame, { scale: horizontal ? width / baseWidth : height / baseHeight, y: horizontal ? 80 : 0 })
-    }
-    layout()
-    const go = next => {
-      if (state.zoom || paused) return
-      active = Math.max(0, Math.min(lastIndex(), next))
-      setIndex(active)
-      state.target = active * step
-      state.position = state.target
-    }
-    const toggleZoom = () => {
-      if (dragged || paused) return
-      const next = !state.zoom
-      state.zoom = next ? 1 : 0
-      root.dataset.zoom = String(next)
-      setZoomed(next)
-      animate(() => {
-        zoomTween?.kill()
-        zoomTween = gsap.timeline()
-        zoomTween.to(frame, { scale: next ? (horizontal ? width / baseWidth : height / baseHeight) : 1, y: next && horizontal ? 80 : 0, duration: state.reduced ? 0 : next ? 1 : 0.4, ease: next ? 'expo.inOut' : 'expo.out' }, 0)
-          .to('.viewer-backdrop', { opacity: next ? 1 : 0, duration: state.reduced ? 0 : 0.5 }, 0)
-          .to(header, { opacity: next ? 0 : 1, pointerEvents: next ? 'none' : 'auto', duration: state.reduced ? 0 : 0.5 }, 0)
-        if (next && !state.reduced) zoomTween.to(state, { zoomTransition: 1, duration: 0.5, ease: 'power4.in' }, 0).to(state, { zoomTransition: 0, duration: 0.5, ease: 'power1.out' }, 0.5)
-      })
-    }
-    const tick = (_time, elapsed) => {
-      if (disposed || paused || document.hidden) return
-      const delta = Math.min((elapsed || 16.67) / 16.67, 3)
-      state.position += (state.target - state.position) * (state.reduced ? 1 : 1 - Math.pow(1 - MOTION.ease, delta))
-      state.mouseX += (mouse.x - state.mouseX) * 0.1
-      state.mouseY += (mouse.y - state.mouseY) * 0.1
-      const speed = 2 * Math.hypot(mouse.x - previousMouse.x, mouse.y - previousMouse.y) * 1000 / (elapsed || 16.67)
-      state.mousePower += (Math.max(0.1, Math.min(Math.sqrt(speed), 1)) - state.mousePower) * 0.1
-      previousMouse.x = mouse.x
-      previousMouse.y = mouse.y
-      const next = Math.max(0, Math.min(lastIndex(), Math.round(state.position / step)))
-      if (next !== active) { active = next; setIndex(next) }
-      rail.style.transform = horizontal ? `translate3d(${-state.position}px,0,0)` : `translate3d(0,${-state.position}px,0)`
-      renderer?.render(delta)
-    }
-    gsap.ticker.add(tick)
-    import('@/lib/gallery/webgl').then(({ createPhotoRenderer }) => {
-      if (disposed) return
-      try { renderer = createPhotoRenderer(stage, { kind: 'viewer', state: () => state }) } catch { root.dataset.renderer = 'dom' }
-    }).catch(() => { root.dataset.renderer = 'dom' })
-    const onWheel = event => {
-      if (event.ctrlKey || event.target.closest('a,.viewer-status')) return
-      event.preventDefault()
-      if (state.zoom || paused) return
-      const units = event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? height : 1
-      const axisScale = horizontal ? 1 : height / width
-      state.target = Math.max(0, Math.min(lastIndex() * step, state.target + (event.deltaY + event.deltaX) * units * (mobile ? MOTION.wheelMobile : MOTION.wheelDesktop) * axisScale))
-    }
-    const onKeyDown = event => {
-      if (event.key === 'Escape') { event.preventDefault(); state.zoom ? toggleZoom() : closeRef.current() }
-      if (event.key.startsWith('Arrow') && !event.altKey && !event.metaKey) {
-        event.preventDefault()
-        go(active + (event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1))
-      }
-      if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); go(event.key === 'Home' ? 0 : lastIndex()) }
-      if (event.key === 'Tab') {
-        const targets = [...root.querySelectorAll('a,button')].filter(el => !el.disabled && (state.zoom ? el === frame : true))
-        const first = targets[0], last = targets[targets.length - 1]
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
-        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
-      }
-    }
-    const down = event => {
-      dragged = false
-      if (event.button !== 0 || state.zoom || event.target.closest('a,.viewer-header,.viewer-status')) return
-      pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, target: state.target }
-    }
-    const move = event => {
-      mouse.x = event.clientX / width
-      mouse.y = 1 - event.clientY / height
-      if (!pointer) return
-      const distance = horizontal ? pointer.x - event.clientX : pointer.y - event.clientY
-      if (Math.abs(distance) > 6) {
-        dragged = true
-        root.setPointerCapture(pointer.id)
-        state.target = Math.max(0, Math.min(lastIndex() * step, pointer.target + distance * 1.8))
-      }
-    }
-    const up = () => { pointer = null }
-    const clickCapture = event => { if (dragged) { event.preventDefault(); event.stopPropagation() } }
-    const onReduced = () => {
-      state.reduced = reduced.matches
-      if (state.reduced) ctx.getTweens().forEach(tween => tween.progress(1))
-    }
-    root.addEventListener('wheel', onWheel, { passive: false })
-    root.addEventListener('keydown', onKeyDown)
-    root.addEventListener('pointerdown', down)
-    root.addEventListener('pointermove', move)
-    root.addEventListener('pointerup', up)
-    root.addEventListener('pointercancel', up)
-    root.addEventListener('click', clickCapture, true)
-    window.addEventListener('resize', layout)
-    reduced.addEventListener('change', onReduced)
-    animate(() => {
-      const duration = state.reduced ? 0 : 1.8
-      gsap.fromTo(root, { y: state.reduced ? 0 : '15vh' }, { y: 0, duration: state.reduced ? 0 : 2, ease: 'expo.inOut' })
-      if (board) {
-        gsap.to(board.querySelector('.gallery-page-cover'), { opacity: 0.5, duration: state.reduced ? 0 : 1 })
-        gsap.to(board, { y: mobile ? '-5vh' : '-10vh', clipPath: 'inset(0vh 0vw 100vh 0vw)', duration, ease: 'expo.inOut' })
-      }
-      gsap.fromTo(mainHeader, { y: 0, opacity: 1 }, { y: '-100%', opacity: 0, duration: state.reduced ? 0 : 1, ease: 'power4.inOut' })
-      gsap.from(header, { y: '100%', opacity: 0, delay: state.reduced ? 0 : 0.5, duration: state.reduced ? 0 : 1.5, ease: 'power4.out' })
-      gsap.from(thumbs, { [horizontal ? 'y' : 'x']: horizontal ? '-150vh' : '-50vw', clipPath: horizontal ? 'inset(100% 0 0 0)' : 'inset(0 70% 0 30%)', stagger: state.reduced ? 0 : 0.06, duration: state.reduced ? 0 : horizontal ? 1.7 : 1.5, ease: 'power4.out', delay: state.reduced ? 0 : 0.7 })
+    const controller = createViewerMotion(rootRef.current, {
+      count: photos.length,
+      onIndex: setIndex,
+      onZoom: setZoomed,
+      onClose: () => callbacks.current.onClose(),
+      onExited: () => callbacks.current.onExited(),
+      mainHeader: headerRef.current
     })
-    root.querySelector('.viewer-close').focus({ preventScroll: true })
-    controllerRef.current = {
-      go,
-      toggleZoom,
-      refreshPhotos () {
-        thumbs = [...root.querySelectorAll('.viewer-thumb')]
-        active = Math.min(active, lastIndex())
-        setIndex(active)
-        layout()
-        state.target = state.position = active * step
-      },
-      imageLoaded (image) { aspect = image.naturalWidth / image.naturalHeight; layout() },
-      exit () {
-        paused = true
-        boardRef?.current?.resume()
-        const homeBoard = boardRef?.current?.board
-        animate(() => {
-          // Closing during the entrance must not leave competing page tweens.
-          gsap.killTweensOf([root, homeBoard, mainHeader].filter(Boolean))
-          // Keep the viewer mounted until the longer home-board return finishes.
-          const exitTimeline = gsap.timeline({ onComplete: onExited })
-          exitTimeline.to(root, { y: mobile ? '-5vh' : '-10vh', clipPath: 'inset(0vh 0vw 100vh 0vw)', duration: state.reduced ? 0 : 1.8, ease: 'expo.inOut' }, 0)
-          if (homeBoard) {
-            gsap.set(homeBoard, { clipPath: 'none' })
-            exitTimeline.fromTo(homeBoard, { y: '15vh' }, { y: 0, duration: state.reduced ? 0 : 2, ease: 'expo.inOut' }, 0)
-            exitTimeline.to(homeBoard.querySelector('.gallery-page-cover'), { opacity: 0, duration: state.reduced ? 0 : 1 }, 0)
-          }
-          exitTimeline.to(mainHeader, { y: 0, opacity: 1, duration: state.reduced ? 0 : 0.5 }, state.reduced ? 0 : 0.5)
-        })
-      }
-    }
-    return () => {
-      disposed = true
-      mainHeader.inert = false
-      controllerRef.current = null
-      gsap.ticker.remove(tick)
-      root.removeEventListener('wheel', onWheel)
-      root.removeEventListener('keydown', onKeyDown)
-      root.removeEventListener('pointerdown', down)
-      root.removeEventListener('pointermove', move)
-      root.removeEventListener('pointerup', up)
-      root.removeEventListener('pointercancel', up)
-      root.removeEventListener('click', clickCapture, true)
-      window.removeEventListener('resize', layout)
-      reduced.removeEventListener('change', onReduced)
-      ctx.revert()
-      // These nodes outlive the viewer. Reverting a fromTo() can restore its
-      // immediate-render start (15vh); return their layout to the owning CSS.
-      if (board) {
-        gsap.set(board, { clearProps: 'transform,clipPath' })
-        gsap.set(board.querySelector('.gallery-page-cover'), { clearProps: 'opacity' })
-      }
-      gsap.set(mainHeader, { clearProps: 'transform,opacity' })
-      renderer?.destroy()
-    }
-  }, [boardRef, onExited])
+    controllerRef.current = controller
+    return () => { controller.destroy(); controllerRef.current = null }
+  }, [photos.length, headerRef])
+
+  // A shared URL restores the selected photo. Own shallow replacements must not
+  // interrupt an in-progress wheel or drag gesture.
+  useEffect(() => {
+    if (!router.isReady || writtenQuery.current === router.query.photo) return
+    controllerRef.current?.go(photoIndex(router.query.photo, photos.length))
+  }, [router.isReady, router.query.photo, photos.length])
+  useEffect(() => {
+    if (!router.isReady) return
+    const timer = setTimeout(() => {
+      const value = index ? String(index + 1) : undefined
+      if (value === router.query.photo) return
+      writtenQuery.current = value
+      const query = { ...router.query }
+      if (value) query.photo = value
+      else delete query.photo
+      router.replace({ pathname: router.pathname, query }, undefined, { shallow: true, scroll: false }).catch(() => {})
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [index, router])
 
   useEffect(() => {
-    photosRef.current = photos
-    controllerRef.current?.refreshPhotos()
-  }, [photos])
+    // Match Next Image's responsive URL so the next slide can reuse the browser
+    // cache. Only the two immediate neighbours are prefetched at low priority.
+    const timer = setTimeout(() => {
+      nearbyPhotos(photos.length, index, 1).filter(i => i !== index).forEach(i => {
+        const src = photos[i].src
+        if (!src) return
+        const { props } = getImageProps({ src, alt: '', fill: true, sizes: imageSizes, loader: /^https:\/\/app\.notion\.com\/(image|images|icons)\//.test(src) ? notionImageLoader : undefined })
+        const image = new window.Image()
+        image.decoding = 'async'
+        image.fetchPriority = 'low'
+        image.sizes = props.sizes
+        image.srcset = props.srcSet || ''
+        image.src = props.src
+      })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [index, photos])
   useEffect(() => { if (!open) controllerRef.current?.exit() }, [open])
   const onImageLoad = useCallback(event => controllerRef.current?.imageLoaded(event.target), [])
 
@@ -240,20 +84,26 @@ export default function GalleryViewer ({ post, photos = [], open, onClose, onExi
       <header className="viewer-header"><span className="viewer-wordmark">{BLOG.author}</span><button type="button" className="viewer-close text-link" onClick={onClose}>Close <span aria-hidden="true">×</span></button></header>
       <div className="viewer-stage">
         <button className="viewer-image" type="button" data-gallery-image data-active="true" onClick={() => controllerRef.current?.toggleZoom()} aria-label={zoomed ? '缩小照片' : '放大照片'} aria-pressed={zoomed}>
-          <Photo key={photo.id} src={photo.src} title={photo.title} priority sizes="100vw" onLoad={onImageLoad} />
+          <Photo key={photo.id} src={photo.src} title={photo.title} priority sizes={zoomed ? '100vw' : imageSizes} retryKey={retryKey} onLoad={onImageLoad} onError={() => setFailed(photo.id)} />
         </button>
       </div>
+      {failed === photo.id && <button type="button" className="viewer-retry" onClick={() => { setFailed(null); setRetryKey(key => key + 1) }}>图片加载失败，点击重试</button>}
       <div className="viewer-rail-window"><div className="viewer-rail">
-        {items.map((item, itemIndex) => <button type="button" className="viewer-thumb" key={item.id} data-photo-id={item.id} aria-label={`查看第 ${itemIndex + 1} 张：${item.title}`} aria-current={itemIndex === index ? 'true' : undefined} onClick={() => controllerRef.current?.go(itemIndex)}><Photo src={item.src} title={item.title} sizes="60px" loading="eager" index={itemIndex} /></button>)}
+        {items.map((item, itemIndex) => <button type="button" className="viewer-thumb" key={item.id} data-photo-id={item.id} aria-label={`查看第 ${itemIndex + 1} 张：${item.title}`} aria-current={itemIndex === index ? 'true' : undefined} tabIndex={itemIndex === index && !zoomed ? 0 : -1} onClick={() => controllerRef.current?.go(itemIndex)}>
+          {Math.abs(itemIndex - index) <= 10 && <Photo src={item.src} title={item.title} sizes="(max-width: 679px) 10vw, 4.2vw" loading="lazy" index={itemIndex} />}
+        </button>)}
       </div></div>
       <div className="viewer-selection-border" aria-hidden="true" />
       <span className="viewfinder viewer-scope" aria-hidden="true" />
       <div className="viewer-caption"><p>CATEGORY</p><span>{post.tags?.join(' / ') || 'Journal'}</span></div>
       <div className="viewer-story"><h1>{post.title}</h1></div>
+      <nav className="viewer-navigation" aria-label="照片翻页">
+        <button type="button" aria-label="上一张照片" disabled={index === 0 || zoomed} onClick={() => controllerRef.current?.go(index - 1)}>←</button>
+        <button type="button" aria-label="下一张照片" disabled={index >= photos.length - 1 || zoomed} onClick={() => controllerRef.current?.go(index + 1)}>→</button>
+      </nav>
       <div className="viewer-status" role="status" aria-live="polite">
         {photos.length ? `${index + 1} / ${photos.length}` : '本篇暂时没有照片。'}
       </div>
-      <span className="sr-only" aria-live="polite">{post.title}，{photos.length ? `第 ${index + 1} 张，共 ${photos.length} 张` : '暂无照片'}</span>
     </section>
   )
 }

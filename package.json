@@ -14,10 +14,12 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "node scripts/build.mjs",
     "start": "next start",
     "lint": "eslint .",
-    "postbuild": "next-sitemap --config next-sitemap.config.js"
+    "postbuild": "next-sitemap --config next-sitemap.config.js && pnpm check:build",
+    "test": "node --test tests/*.test.mjs",
+    "check:build": "node scripts/check-build.mjs"
   },
   "engines": {
     "node": "22.x"
