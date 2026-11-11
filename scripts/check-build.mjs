@@ -9,7 +9,11 @@ const html = await readFile(join(pages, 'index.html'), 'utf8')
 const data = JSON.parse(html.match(/<script id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/s)[1])
 const posts = data.props.pageProps.posts
 const frames = (html.match(/class="gallery-frame"/g) || []).length
-const styles = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].map(match => match[0].match(/href="([^"]+)"/)[1])
+const styles = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].map(match => {
+  const href = match[0].match(/href="([^"]+)"/)[1]
+  // Deployment queries (e.g. Vercel's ?dpl=...) are not part of the disk path.
+  return new URL(href, 'https://build.invalid').pathname
+})
 const cssBytes = (await Promise.all(styles.map(path => stat(join('.next', path.split('/_next/')[1]))))).reduce((sum, file) => sum + file.size, 0)
 const detailSizes = []
 for (const file of await readdir(pages)) {
