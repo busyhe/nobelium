@@ -3,19 +3,25 @@ import { clientConfig } from '@/lib/server/config'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { getAllPosts, getPostBlocks } from '@/lib/notion'
+import { getPostPhotos } from '@/lib/notion/getPostPhotos'
 import { useLocale } from '@/lib/locale'
 import { useConfig } from '@/lib/config'
 import Container from '@/components/Container'
 import Post from '@/components/Post'
 import Comments from '@/components/Comments'
 import RouteSkeleton from '@/components/RouteSkeleton'
+import StoryGallery from '@/components/gallery/StoryGallery'
 
-export default function BlogPost ({ post, blockMap }) {
+export default function BlogPost ({ post, blockMap, photos, previousPath }) {
   const router = useRouter()
   const BLOG = useConfig()
   const locale = useLocale()
 
   if (router.isFallback) return <RouteSkeleton route={router.asPath} />
+
+  if (!post.type?.includes('Page')) {
+    return <StoryGallery key={post.id} post={post} photos={photos} previousPath={previousPath} />
+  }
 
   const fullWidth = post.fullWidth ?? false
 
@@ -73,7 +79,7 @@ export async function getStaticProps ({ params: { slug } }) {
   const blockMap = await getPostBlocks(post.id)
 
   return {
-    props: { post, blockMap },
+    props: { post, blockMap, photos: post.type?.includes('Page') ? [] : getPostPhotos(post, blockMap) },
     revalidate: clientConfig.revalidateTime
   }
 }

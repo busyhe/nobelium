@@ -9,11 +9,11 @@ A static blog build on top of Notion and Nextjs, deployed on [Vercel](https://ve
 This fork ports the local Photoyoshi gallery motion and interaction to React while keeping Notion as the content source.
 
 - The home page samples Notion tag collections in a five-row, infinitely looping photo wall. It includes the letter/cover opening sequence, inertial wheel and touch scrolling, category hover highlights, the original WebGL distortion shaders, and the Grid/Full morph with a dark backdrop.
-- Select a photo or collection title to reveal all posts in that collection. Use the thumbnail rail, wheel, or arrow keys to change photos; click the main photo to zoom, and press Escape to zoom out or close. The story title opens the existing article. Collection URLs use `?collection=…` and support browser back/forward.
-- `/search` provides the searchable index; `/tag/[tag]`, `/page/[page]`, and existing article URLs remain available. Search matches titles, summaries, and tags without truncating results to 20 items.
-- Article pages use the same paper-and-ink palette, with a cover, Notion content, keyboard-accessible table of contents, and existing comments.
-- `blog.config.js` controls the author wordmark, `profileLink`, and appearance. The archive and article pages support light, dark, and automatic themes; the immersive gallery follows the reference’s light-grid / dark-full presentation. Missing or failed covers use a text placeholder.
-- The gallery uses a system sans-serif stack; archive/article fonts use bundled IBM Plex Sans / Source Serif files and system CJK fallbacks. Reduced motion skips the splash and morphing. Photos remain usable if WebGL is unavailable or its context is lost.
+- Select a photo to open that post's photo gallery at `/[slug]`, or select a collection title to browse its tag index. Use the thumbnail rail, wheel, or arrow keys to change photos; click the main photo to zoom, and press Escape to zoom out or close. The story title is a label with no article link. The former `?view=article` option no longer switches to an article view.
+- `/search` provides the searchable index; `/tag/[tag]`, `/page/[page]`, and existing post URLs remain available. Search matches titles, summaries, and tags without truncating results to 20 items.
+- Standalone Notion `Page` entries, such as About, retain the paper-and-ink content layout, with a cover, Notion content, keyboard-accessible table of contents, and existing comments.
+- `blog.config.js` controls the author wordmark, `profileLink`, and appearance. The archive and standalone pages support light, dark, and automatic themes; the immersive gallery follows the reference’s light-grid / dark-full presentation. Missing or failed covers use a text placeholder.
+- The gallery uses a system sans-serif stack; archive and standalone page fonts use bundled IBM Plex Sans / Source Serif files and system CJK fallbacks. Reduced motion skips the splash and morphing. Photos remain usable if WebGL is unavailable or its context is lost.
 - Motion implementation and source parameters are documented in `docs/photoyoshi-motion.md`.
 
 Run `pnpm dev` for local development, `pnpm lint` for static checks, and `pnpm build` for a production build. Content rendering and static generation require access to the configured Notion database.

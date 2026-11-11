@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { gsap } from 'gsap'
 import Photo from '@/components/Photo'
 import { useConfig } from '@/lib/config'
 import { MOTION } from '@/lib/gallery/motion'
 
-export default function GalleryViewer ({ group, open, onClose, onExited, boardRef }) {
+export default function GalleryViewer ({ post, photos = [], open, onClose, onExited, boardRef }) {
   const BLOG = useConfig()
   const rootRef = useRef(null)
   const controllerRef = useRef(null)
   const [index, setIndex] = useState(0)
   const [zoomed, setZoomed] = useState(false)
-  const post = group.posts[index] || group.posts[0]
+  const photosRef = useRef(photos)
+  const items = photos.length ? photos : [{ id: post.id, title: post.title }]
+  const photo = items[index] || items[0]
   const closeRef = useRef(onClose)
   useEffect(() => { closeRef.current = onClose }, [onClose])
 
@@ -20,9 +21,9 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
     const stage = root.querySelector('.viewer-stage')
     const frame = root.querySelector('.viewer-image')
     const rail = root.querySelector('.viewer-rail')
-    const thumbs = [...root.querySelectorAll('.viewer-thumb')]
+    let thumbs = [...root.querySelectorAll('.viewer-thumb')]
     const header = root.querySelector('.viewer-header')
-    const board = boardRef.current?.board
+    const board = boardRef?.current?.board
     const mainHeader = root.closest('.wrapper').querySelector('.site-header')
     mainHeader.inert = true
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -33,6 +34,7 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
     const animate = callback => ctx.add(callback)
     let width, height, mobile, horizontal, step, aspect = 1.5, renderer, disposed = false, paused = false, active = 0, pointer, dragged = false
     let baseWidth, baseHeight, zoomTween
+    const lastIndex = () => Math.max(0, photosRef.current.length - 1)
     const layout = () => {
       width = root.clientWidth
       height = root.clientHeight
@@ -64,7 +66,7 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
     layout()
     const go = next => {
       if (state.zoom || paused) return
-      active = Math.max(0, Math.min(group.posts.length - 1, next))
+      active = Math.max(0, Math.min(lastIndex(), next))
       setIndex(active)
       state.target = active * step
       state.position = state.target
@@ -94,7 +96,7 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
       state.mousePower += (Math.max(0.1, Math.min(Math.sqrt(speed), 1)) - state.mousePower) * 0.1
       previousMouse.x = mouse.x
       previousMouse.y = mouse.y
-      const next = Math.max(0, Math.min(group.posts.length - 1, Math.round(state.position / step)))
+      const next = Math.max(0, Math.min(lastIndex(), Math.round(state.position / step)))
       if (next !== active) { active = next; setIndex(next) }
       rail.style.transform = horizontal ? `translate3d(${-state.position}px,0,0)` : `translate3d(0,${-state.position}px,0)`
       renderer?.render(delta)
@@ -105,12 +107,12 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
       try { renderer = createPhotoRenderer(stage, { kind: 'viewer', state: () => state }) } catch { root.dataset.renderer = 'dom' }
     }).catch(() => { root.dataset.renderer = 'dom' })
     const onWheel = event => {
-      if (event.ctrlKey || event.target.closest('a')) return
+      if (event.ctrlKey || event.target.closest('a,.viewer-status')) return
       event.preventDefault()
       if (state.zoom || paused) return
       const units = event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? height : 1
       const axisScale = horizontal ? 1 : height / width
-      state.target = Math.max(0, Math.min((group.posts.length - 1) * step, state.target + (event.deltaY + event.deltaX) * units * (mobile ? MOTION.wheelMobile : MOTION.wheelDesktop) * axisScale))
+      state.target = Math.max(0, Math.min(lastIndex() * step, state.target + (event.deltaY + event.deltaX) * units * (mobile ? MOTION.wheelMobile : MOTION.wheelDesktop) * axisScale))
     }
     const onKeyDown = event => {
       if (event.key === 'Escape') { event.preventDefault(); state.zoom ? toggleZoom() : closeRef.current() }
@@ -118,7 +120,7 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
         event.preventDefault()
         go(active + (event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1))
       }
-      if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); go(event.key === 'Home' ? 0 : group.posts.length - 1) }
+      if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); go(event.key === 'Home' ? 0 : lastIndex()) }
       if (event.key === 'Tab') {
         const targets = [...root.querySelectorAll('a,button')].filter(el => !el.disabled && (state.zoom ? el === frame : true))
         const first = targets[0], last = targets[targets.length - 1]
@@ -128,7 +130,7 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
     }
     const down = event => {
       dragged = false
-      if (event.button !== 0 || state.zoom || event.target.closest('a,.viewer-header')) return
+      if (event.button !== 0 || state.zoom || event.target.closest('a,.viewer-header,.viewer-status')) return
       pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, target: state.target }
     }
     const move = event => {
@@ -139,7 +141,7 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
       if (Math.abs(distance) > 6) {
         dragged = true
         root.setPointerCapture(pointer.id)
-        state.target = Math.max(0, Math.min((group.posts.length - 1) * step, pointer.target + distance * 1.8))
+        state.target = Math.max(0, Math.min(lastIndex() * step, pointer.target + distance * 1.8))
       }
     }
     const up = () => { pointer = null }
@@ -172,11 +174,18 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
     controllerRef.current = {
       go,
       toggleZoom,
+      refreshPhotos () {
+        thumbs = [...root.querySelectorAll('.viewer-thumb')]
+        active = Math.min(active, lastIndex())
+        setIndex(active)
+        layout()
+        state.target = state.position = active * step
+      },
       imageLoaded (image) { aspect = image.naturalWidth / image.naturalHeight; layout() },
       exit () {
         paused = true
-        boardRef.current?.resume()
-        const homeBoard = boardRef.current?.board
+        boardRef?.current?.resume()
+        const homeBoard = boardRef?.current?.board
         animate(() => {
           // Closing during the entrance must not leave competing page tweens.
           gsap.killTweensOf([root, homeBoard, mainHeader].filter(Boolean))
@@ -216,28 +225,35 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
       gsap.set(mainHeader, { clearProps: 'transform,opacity' })
       renderer?.destroy()
     }
-  }, [group, boardRef, onExited])
+  }, [boardRef, onExited])
 
+  useEffect(() => {
+    photosRef.current = photos
+    controllerRef.current?.refreshPhotos()
+  }, [photos])
   useEffect(() => { if (!open) controllerRef.current?.exit() }, [open])
   const onImageLoad = useCallback(event => controllerRef.current?.imageLoaded(event.target), [])
 
   return (
-    <section ref={rootRef} className="gallery-viewer" role="dialog" aria-modal="true" aria-label={`${group.name} 作品集`} data-zoom="false">
+    <section ref={rootRef} className="gallery-viewer" role="dialog" aria-modal="true" aria-label={`${post.title} 篇章照片`} data-post-id={post.id} data-zoom="false">
       <div className="viewer-backdrop" />
       <header className="viewer-header"><span className="viewer-wordmark">{BLOG.author}</span><button type="button" className="viewer-close text-link" onClick={onClose}>Close <span aria-hidden="true">×</span></button></header>
       <div className="viewer-stage">
         <button className="viewer-image" type="button" data-gallery-image data-active="true" onClick={() => controllerRef.current?.toggleZoom()} aria-label={zoomed ? '缩小照片' : '放大照片'} aria-pressed={zoomed}>
-          <Photo key={post.id} src={post.page_cover} title={post.title} priority sizes="100vw" onLoad={onImageLoad} />
+          <Photo key={photo.id} src={photo.src} title={photo.title} priority sizes="100vw" onLoad={onImageLoad} />
         </button>
       </div>
       <div className="viewer-rail-window"><div className="viewer-rail">
-        {group.posts.map((item, itemIndex) => <button type="button" className="viewer-thumb" key={item.id} aria-label={`查看第 ${itemIndex + 1} 张：${item.title}`} aria-current={itemIndex === index ? 'true' : undefined} onClick={() => controllerRef.current?.go(itemIndex)}><Photo src={item.page_cover} title={item.title} sizes="60px" loading="eager" index={itemIndex} /></button>)}
+        {items.map((item, itemIndex) => <button type="button" className="viewer-thumb" key={item.id} data-photo-id={item.id} aria-label={`查看第 ${itemIndex + 1} 张：${item.title}`} aria-current={itemIndex === index ? 'true' : undefined} onClick={() => controllerRef.current?.go(itemIndex)}><Photo src={item.src} title={item.title} sizes="60px" loading="eager" index={itemIndex} /></button>)}
       </div></div>
       <div className="viewer-selection-border" aria-hidden="true" />
       <span className="viewfinder viewer-scope" aria-hidden="true" />
-      <div className="viewer-caption"><p>CATEGORY</p><span>{group.name}</span></div>
-      <Link href={`${BLOG.path}/${post.slug}`} className="viewer-story text-link" prefetch={false}>{post.title}<span aria-hidden="true"> ↗</span></Link>
-      <span className="sr-only" aria-live="polite">{post.title}，第 {index + 1} 张，共 {group.posts.length} 张</span>
+      <div className="viewer-caption"><p>CATEGORY</p><span>{post.tags?.join(' / ') || 'Journal'}</span></div>
+      <div className="viewer-story"><h1>{post.title}</h1></div>
+      <div className="viewer-status" role="status" aria-live="polite">
+        {photos.length ? `${index + 1} / ${photos.length}` : '本篇暂时没有照片。'}
+      </div>
+      <span className="sr-only" aria-live="polite">{post.title}，{photos.length ? `第 ${index + 1} 张，共 ${photos.length} 张` : '暂无照片'}</span>
     </section>
   )
 }
