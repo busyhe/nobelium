@@ -178,14 +178,17 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
         boardRef.current?.resume()
         const homeBoard = boardRef.current?.board
         animate(() => {
-          gsap.killTweensOf(root)
-          gsap.to(root, { y: mobile ? '-5vh' : '-10vh', clipPath: 'inset(0vh 0vw 100vh 0vw)', duration: state.reduced ? 0 : 1.8, ease: 'expo.inOut', onComplete: onExited })
+          // Closing during the entrance must not leave competing page tweens.
+          gsap.killTweensOf([root, homeBoard, mainHeader].filter(Boolean))
+          // Keep the viewer mounted until the longer home-board return finishes.
+          const exitTimeline = gsap.timeline({ onComplete: onExited })
+          exitTimeline.to(root, { y: mobile ? '-5vh' : '-10vh', clipPath: 'inset(0vh 0vw 100vh 0vw)', duration: state.reduced ? 0 : 1.8, ease: 'expo.inOut' }, 0)
           if (homeBoard) {
             gsap.set(homeBoard, { clipPath: 'none' })
-            gsap.fromTo(homeBoard, { y: '15vh' }, { y: 0, duration: state.reduced ? 0 : 2, ease: 'expo.inOut' })
-            gsap.to(homeBoard.querySelector('.gallery-page-cover'), { opacity: 0, duration: state.reduced ? 0 : 1 })
+            exitTimeline.fromTo(homeBoard, { y: '15vh' }, { y: 0, duration: state.reduced ? 0 : 2, ease: 'expo.inOut' }, 0)
+            exitTimeline.to(homeBoard.querySelector('.gallery-page-cover'), { opacity: 0, duration: state.reduced ? 0 : 1 }, 0)
           }
-          gsap.to(mainHeader, { y: 0, opacity: 1, delay: state.reduced ? 0 : 0.5, duration: state.reduced ? 0 : 0.5 })
+          exitTimeline.to(mainHeader, { y: 0, opacity: 1, duration: state.reduced ? 0 : 0.5 }, state.reduced ? 0 : 0.5)
         })
       }
     }
@@ -204,6 +207,13 @@ export default function GalleryViewer ({ group, open, onClose, onExited, boardRe
       window.removeEventListener('resize', layout)
       reduced.removeEventListener('change', onReduced)
       ctx.revert()
+      // These nodes outlive the viewer. Reverting a fromTo() can restore its
+      // immediate-render start (15vh); return their layout to the owning CSS.
+      if (board) {
+        gsap.set(board, { clearProps: 'transform,clipPath' })
+        gsap.set(board.querySelector('.gallery-page-cover'), { clearProps: 'opacity' })
+      }
+      gsap.set(mainHeader, { clearProps: 'transform,opacity' })
       renderer?.destroy()
     }
   }, [group, boardRef, onExited])
