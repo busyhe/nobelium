@@ -1,64 +1,45 @@
 import { useState } from 'react'
 import BlogPost from '@/components/BlogPost'
 import Container from '@/components/Container'
+import GalleryGrid from '@/components/GalleryGrid'
 import Tags from '@/components/Tags'
-import PropTypes from 'prop-types'
+import { useConfig } from '@/lib/config'
 
-const SearchLayout = ({ tags, posts, currentTag }) => {
+export default function SearchLayout ({ tags, posts, currentTag }) {
+  const BLOG = useConfig()
   const [searchValue, setSearchValue] = useState('')
-  let filteredBlogPosts = []
-  if (posts) {
-    filteredBlogPosts = posts.filter(post => {
-      const tagContent = post.tags ? post.tags.join(' ') : ''
-      const searchContent = post.title + post.summary + tagContent
-      return searchContent.toLowerCase().includes(searchValue.toLowerCase())
-    })
-  }
+  const query = searchValue.trim().toLowerCase()
+  const filteredPosts = posts.filter(post => [post.title, post.summary, ...(post.tags || [])].filter(Boolean).join(' ').toLowerCase().includes(query))
 
   return (
-    <Container>
-      <div className="relative">
-        <input
-          type="text"
-          placeholder={
-            currentTag ? `Search in #${currentTag}` : 'Search Articles'
-          }
-          className="block w-full border px-4 py-2 border-black bg-white text-black dark:bg-night dark:border-white dark:text-white"
-          onChange={e => setSearchValue(e.target.value)}
-        />
-        <svg
-          className="absolute right-3 top-3 h-5 w-5 text-black dark:text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          ></path>
-        </svg>
+    <Container title={`${currentTag || 'Index'} — ${BLOG.title}`}>
+      <div className="index-heading">
+        <div>
+          <p className="eyebrow">The archive / 作品索引</p>
+          <h1>{currentTag || 'Index'}<sup>({String(posts.length).padStart(2, '0')})</sup></h1>
+        </div>
+        <p className="index-description">一些值得留下的瞬间。<br />关于日常、远方，以及生活里的发现。</p>
       </div>
-      <Tags
-        tags={tags}
-        currentTag={currentTag}
-      />
-      <div className="article-container my-8">
-        {!filteredBlogPosts.length && (
-          <p className="text-gray-500 dark:text-gray-300">No posts found.</p>
-        )}
-        {filteredBlogPosts.slice(0, 20).map(post => (
-          <BlogPost key={post.id} post={post} />
-        ))}
+      <div className="index-toolbar">
+        <Tags tags={tags} currentTag={currentTag} />
+        <label className="search-field">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><circle cx="10" cy="10" r="6.5" /><path d="m15 15 6 6" /></svg>
+          <span className="sr-only">搜索作品</span>
+          <input type="search" placeholder={currentTag ? `在 ${currentTag} 中搜索…` : '搜索标题、描述或标签…'} value={searchValue} onChange={e => setSearchValue(e.target.value)} />
+        </label>
       </div>
+      <p className="result-count" role="status">{String(filteredPosts.length).padStart(2, '0')} STORIES{query && ` / “${searchValue.trim()}”`}</p>
+      {filteredPosts.length ? (
+        <GalleryGrid>
+          {filteredPosts.map((post, index) => <BlogPost key={post.id} post={post} index={index} priority={index < 4} />)}
+        </GalleryGrid>
+      ) : (
+        <div className="search-empty">
+          <h2>没有找到相关作品。</h2>
+          <p>试试其他关键词，或从分类中重新发现。</p>
+          {searchValue && <button type="button" onClick={() => setSearchValue('')}>清除搜索 ↗</button>}
+        </div>
+      )}
     </Container>
   )
 }
-SearchLayout.propTypes = {
-  posts: PropTypes.array.isRequired,
-  tags: PropTypes.object.isRequired,
-  currentTag: PropTypes.string
-}
-export default SearchLayout

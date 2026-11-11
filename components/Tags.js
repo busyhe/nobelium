@@ -1,34 +1,14 @@
 import Link from 'next/link'
 
-const Tags = ({ tags, currentTag }) => {
-  if (!tags) return null
+export default function Tags ({ tags = {}, currentTag }) {
   return (
-    <div className="tag-container">
-      <ul className="flex max-w-full mt-4 overflow-x-auto">
-        {Object.keys(tags).map(key => {
-          const selected = key === currentTag
-          return (
-            <li
-              key={key}
-              className={`mr-3 font-medium border whitespace-nowrap dark:text-gray-300 ${
-                selected
-                  ? 'text-white bg-black border-black dark:bg-gray-600 dark:border-gray-600'
-                  : 'bg-gray-100 border-gray-100 text-gray-400 dark:bg-night dark:border-gray-800'
-              }`}
-            >
-              <Link
-                key={key}
-                href={selected ? '/search' : `/tag/${encodeURIComponent(key)}`}
-                className="px-4 py-2 block"
-              >
-                {`${key} (${tags[key]})`}
-              </Link>
-            </li>
-          )
-        })}
+    <nav aria-label="作品分类">
+      <ul className="tag-list">
+        <li><Link href="/search" className="text-link" aria-current={!currentTag ? 'page' : undefined}>All works</Link></li>
+        {Object.entries(tags).map(([tag, count]) => (
+          <li key={tag}><Link href={`/tag/${encodeURIComponent(tag)}`} className="text-link" aria-current={tag === currentTag ? 'page' : undefined}>{tag}<sup>{count}</sup></Link></li>
+        ))}
       </ul>
-    </div>
+    </nav>
   )
 }
-
-export default Tags

@@ -6,6 +6,10 @@ import { FONTS_SANS, FONTS_SERIF } from '@/consts'
 import { useConfig } from '@/lib/config'
 import Toggle from '@/components/notion-blocks/Toggle'
 
+const NotionCollection = dynamic(() => {
+  return import('react-notion-x/third-party/collection').then(module => module.Collection)
+})
+
 // Lazy-load some heavy components & override the renderers of some block types
 const components = {
   /* Lazy-load */
@@ -24,7 +28,7 @@ const components = {
         default:
           return h(
             dynamic(() => {
-              return import('react-notion-x/build/third-party/code').then(async module => {
+              return import('react-notion-x/third-party/code').then(async module => {
                 // Additional prismjs syntax
                 await Promise.all([
                   import('prismjs/components/prism-markup-templating'),
@@ -68,16 +72,19 @@ const components = {
     }
   }),
   // Database block
-  Collection: dynamic(() => {
-    return import('react-notion-x/build/third-party/collection').then(module => module.Collection)
-  }),
+  Collection: function Collection (props) {
+    // Post renders the page metadata. Skipping Notion's hidden, async property
+    // header also keeps the first static render and client hydration identical.
+    if (props.block?.type === 'page') return null
+    return h(NotionCollection, props)
+  },
   // Equation block & inline variant
   Equation: dynamic(() => {
-    return import('react-notion-x/build/third-party/equation').then(module => module.Equation)
+    return import('react-notion-x/third-party/equation').then(module => module.Equation)
   }),
   // PDF (Embed block)
   Pdf: dynamic(() => {
-    return import('react-notion-x/build/third-party/pdf').then(module => module.Pdf)
+    return import('react-notion-x/third-party/pdf').then(module => module.Pdf)
   }, { ssr: false }),
   // Tweet block
   Tweet: dynamic(() => {

@@ -9,9 +9,13 @@ import { getAllPosts } from '@/lib/notion'
 const Page = ({ postsToShow, page, showNext, totalPages }) => {
   return (
     <Container>
+      <div className="index-heading">
+        <div><p className="eyebrow">From the archive</p><h1>Collection <sup>{String(page).padStart(2, '0')}</sup></h1></div>
+        <p className="index-description">翻过这一页，继续发现。</p>
+      </div>
       <GalleryGrid>
         {postsToShow &&
-          postsToShow.map((post, index) => <BlogPost key={post.id} post={post} priority={index < 4} />)}
+          postsToShow.map((post, index) => <BlogPost key={post.id} post={post} index={index} priority={index < 4} />)}
       </GalleryGrid>
       <Pagination page={page} showNext={showNext} totalPages={totalPages} />
     </Container>
@@ -49,7 +53,7 @@ export async function getStaticPaths () {
   const totalPages = Math.ceil(totalPosts / config.postsPerPage)
   return {
     // remove first page, we 're not gonna handle that.
-    paths: Array.from({ length: totalPages - 1 }, (_, i) => ({
+    paths: Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => ({
       params: { page: '' + (i + 2) }
     })),
     fallback: 'blocking'

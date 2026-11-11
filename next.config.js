@@ -12,6 +12,10 @@ module.exports = {
       },
       {
         protocol: 'https',
+        hostname: 'app.notion.com'
+      },
+      {
+        protocol: 'https',
         hostname: 'img.notionusercontent.com'
       },
       {

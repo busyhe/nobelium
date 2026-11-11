@@ -4,6 +4,24 @@
 
 A static blog build on top of Notion and Nextjs, deployed on [Vercel](https://vercel.com?utm_source=Craigary&utm_campaign=oss).
 
+## Photography UI
+
+This fork ports the local Photoyoshi gallery motion and interaction to React while keeping Notion as the content source.
+
+- The home page samples Notion tag collections in a five-row, infinitely looping photo wall. It includes the letter/cover opening sequence, inertial wheel and touch scrolling, category hover highlights, the original WebGL distortion shaders, and the Grid/Full morph with a dark backdrop.
+- Select a photo or collection title to reveal all posts in that collection. Use the thumbnail rail, wheel, or arrow keys to change photos; click the main photo to zoom, and press Escape to zoom out or close. The story title opens the existing article. Collection URLs use `?collection=…` and support browser back/forward.
+- `/search` provides the searchable index; `/tag/[tag]`, `/page/[page]`, and existing article URLs remain available. Search matches titles, summaries, and tags without truncating results to 20 items.
+- Article pages use the same paper-and-ink palette, with a cover, Notion content, keyboard-accessible table of contents, and existing comments.
+- `blog.config.js` controls the author wordmark, `profileLink`, and appearance. The archive and article pages support light, dark, and automatic themes; the immersive gallery follows the reference’s light-grid / dark-full presentation. Missing or failed covers use a text placeholder.
+- The gallery uses a system sans-serif stack; archive/article fonts use bundled IBM Plex Sans / Source Serif files and system CJK fallbacks. Reduced motion skips the splash and morphing. Photos remain usable if WebGL is unavailable or its context is lost.
+- Motion implementation and source parameters are documented in `docs/photoyoshi-motion.md`.
+
+Run `pnpm dev` for local development, `pnpm lint` for static checks, and `pnpm build` for a production build. Content rendering and static generation require access to the configured Notion database.
+
+Notion integration uses `notion-client`, `notion-utils`, and `react-notion-x` 8.0.8. API requests go to `https://app.notion.com/api/v3`, replacing the legacy `www.notion.so` endpoint that returned Cloudflare 403 responses. The image allowlist includes `app.notion.com` for the updated image proxy. Local previews use the same live Notion adapters as production, without sample posts or fallback fixtures. Keep `NOTION_PAGE_ID` in `.env.local`; a public database does not need an access token.
+
+Notion covers request the displayed width through `/api/notion-image`. This route preserves same-origin WebGL textures and allows 45 seconds for upstream transfers, avoiding Next's seven-second optimizer timeout on large photos. It accepts only public Notion image paths and Notion CDN redirects, sends no authentication, limits image size, and returns cacheable image responses. Other image providers still use Next's optimizer.
+
 <p>
   <a aria-label="GitHub commit activity" href="https://github.com/craigary/nobelium/commits/main" title="GitHub commit activity">
     <img src="https://img.shields.io/github/commit-activity/m/craigary/nobelium?style=for-the-badge">

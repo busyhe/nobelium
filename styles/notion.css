@@ -51,7 +51,8 @@
 }
 
 .notion {
-  @apply text-gray-600 dark:text-gray-300;
+  color: var(--ink);
+  background: transparent;
   overflow-wrap: break-word;
 }
 .notion,
@@ -135,6 +136,7 @@ pre[class*='language-'] {
 .notion-page {
   @apply w-auto;
   @apply px-0;
+  max-width: none;
 }
 .notion-quote {
   padding: 0.2em 0.9em;

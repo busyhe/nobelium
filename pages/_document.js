@@ -2,7 +2,6 @@ import Document, { Html, Head, Main, NextScript } from 'next/document'
 import cn from 'classnames'
 import { config } from '@/lib/server/config'
 import tailwind from '@/tailwind.config'
-import CJK from '@/lib/cjk'
 class MyDocument extends Document {
   static async getInitialProps (ctx) {
     const initialProps = await Document.getInitialProps(ctx)
@@ -56,38 +55,7 @@ class MyDocument extends Document {
             </>
               )}
 
-          {['zh', 'ja', 'ko'].includes(
-            config.lang.slice(0, 2).toLocaleLowerCase()
-          ) && (
-            <>
-              <link
-                rel="preconnect"
-                href="https://fonts.gstatic.com"
-                crossOrigin="anonymous"
-              />
-              <link
-                rel="preload"
-                as="style"
-                href={`https://fonts.googleapis.com/css2?family=Noto+${
-                  config.font === 'serif' ? 'Serif' : 'Sans'
-                }+${CJK()}:wght@400;500;700&display=swap`}
-              />
-              <link
-                rel="stylesheet"
-                href={`https://fonts.googleapis.com/css2?family=Noto+${
-                  config.font === 'serif' ? 'Serif' : 'Sans'
-                }+${CJK()}:wght@400;500;700&display=swap`}
-              />
-              <noscript>
-                <link
-                  rel="stylesheet"
-                  href={`https://fonts.googleapis.com/css2?family=Noto+${
-                    config.font === 'serif' ? 'Serif' : 'Sans'
-                  }+${CJK()}:wght@400;500;700&display=swap`}
-                />
-              </noscript>
-            </>
-          )}
+          {/* Latin fonts are bundled locally; CJK uses the system fallbacks in consts.js. */}
           <link rel="icon" href="/favicon.png" />
           <link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="/feed"></link>
           {config.appearance === 'auto'

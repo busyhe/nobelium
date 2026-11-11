@@ -1,25 +1,16 @@
 import { useConfig } from '@/lib/config'
-import Vercel from '@/components/Vercel'
-const Footer = ({ fullWidth }) => {
-  const BLOG = useConfig()
+import Link from 'next/link'
 
-  const d = new Date()
-  const y = d.getFullYear()
-  const from = +BLOG.since
+export default function Footer () {
+  const BLOG = useConfig()
+  const year = new Date().getFullYear()
+  const from = Number(BLOG.since)
+
   return (
-    <div
-      className={`mt-40 flex-shrink-0 m-auto w-full text-gray-500 dark:text-gray-400 transition-all`}
-    >
-      <div className="my-4 text-sm leading-6">
-        <div className="flex align-baseline justify-between flex-wrap px-8">
-          <p>
-            © {BLOG.author} {from === y || !from ? y : `${from} - ${y}`}
-          </p>
-          {/* <Vercel /> */}
-        </div>
-      </div>
-    </div>
+    <footer className="site-footer">
+      <p>© {BLOG.author} {from && from !== year ? `${from}–${year}` : year}</p>
+      <p className="site-footer-note">Moments, collected.</p>
+      <Link href="/feed" prefetch={false} target="_blank" rel="noreferrer" className="text-link">RSS <span aria-hidden="true">↗</span></Link>
+    </footer>
   )
 }
-
-export default Footer

@@ -4,14 +4,15 @@ import { useConfig } from '@/lib/config'
 import Head from 'next/head'
 import PropTypes from 'prop-types'
 import cn from 'classnames'
-// import BlogPost from './BlogPost'
 
 const Container = ({ children, layout, fullWidth, ...customMeta }) => {
   const BLOG = useConfig()
+  const immersive = layout === 'gallery'
 
   const url = BLOG.path.length ? `${BLOG.link}/${BLOG.path}` : BLOG.link
   const meta = {
     title: BLOG.title,
+    description: BLOG.description,
     type: 'website',
     ...customMeta
   }
@@ -66,20 +67,18 @@ const Container = ({ children, layout, fullWidth, ...customMeta }) => {
         )}
       </Head>
       <div
-        className={`wrapper ${BLOG.font === 'serif' ? 'font-serif' : 'font-sans'
-          }`}
+        className={cn('wrapper', { 'wrapper--gallery': immersive }, BLOG.font === 'serif' ? 'font-serif' : 'font-sans')}
       >
-        <Header
-          navBarTitle={layout === 'blog' ? meta.title : null}
-          fullWidth={fullWidth}
-        />
+        <a href="#main-content" className="skip-link">跳至内容</a>
+        <Header immersive={immersive} />
         <main className={cn(
-          'flex-grow transition-all',
-          layout !== 'blog' && ['self-center px-8', fullWidth ? 'md:px-24' : 'w-full max-w-6xl']
-        )}>
+          'site-main',
+          immersive ? 'site-main--gallery' : layout === 'blog' ? 'site-main--post' : 'site-main--index',
+          { 'site-main--wide': fullWidth }
+        )} id="main-content">
           {children}
         </main>
-        <Footer fullWidth={fullWidth} />
+        {!immersive && <Footer />}
       </div>
     </div>
   )

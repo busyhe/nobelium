@@ -1,136 +1,35 @@
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useConfig } from '@/lib/config'
-import { useLocale } from '@/lib/locale'
-import useTheme from '@/lib/theme'
 
-const NavBar = () => {
+export default function Header ({ immersive = false }) {
   const BLOG = useConfig()
-  const locale = useLocale()
-  const links = [
-    { id: 0, name: locale.NAV.INDEX, to: BLOG.path || '/', show: true },
-    { id: 1, name: locale.NAV.ABOUT, to: '/about', show: BLOG.showAbout },
-    { id: 2, name: locale.NAV.RSS, to: '/feed', show: false, external: true },
-    { id: 3, name: locale.NAV.ME, to: 'http://busyhe.com/', show: true, external: true },
-    // { id: 4, name: locale.NAV.WIKI, to: 'https://wiki.busyhe.com/', show: true, external: true },
-    // { id: 5, name: locale.NAV.SEARCH, to: '/search', show: true }
-  ]
+  const { pathname } = useRouter()
+  const isPost = pathname === '/[slug]'
+
   return (
-    <div className="flex-shrink-0">
-      <ul className="flex flex-row">
-        {links.map(
-          link =>
-            link.show && (
-              <li
-                key={link.id}
-                className="block ml-4 text-black dark:text-gray-50 nav"
-              >
-                <Link href={link.to} target={link.external ? '_blank' : null}>{link.name}</Link>
-              </li>
-            )
+    <header className={`site-header${immersive ? ' site-header--immersive' : ''}`}>
+      <Link href={BLOG.path || '/'} className="site-wordmark" aria-label={`${BLOG.author} — 首页`}>
+        {BLOG.author}<span aria-hidden="true">®</span>
+      </Link>
+      <p className="site-header-note">A personal collection<br />of moments & stories.</p>
+      <nav className="site-nav" aria-label="主导航">
+        {isPost ? (
+          <Link href={BLOG.path || '/'} className="text-link">Close <span aria-hidden="true">×</span></Link>
+        ) : (
+          <>
+            <Link href={BLOG.path || '/'} className="text-link" aria-current={pathname === '/' ? 'page' : undefined}>Work</Link>
+            <span className="nav-comma" aria-hidden="true">,</span>
+            <Link href="/search" className="text-link" aria-current={pathname === '/search' || pathname === '/tag/[tag]' ? 'page' : undefined}>Index</Link>
+            <span className="nav-comma" aria-hidden="true">,</span>
+            {BLOG.showAbout ? (
+              <Link href="/about" className="text-link">About</Link>
+            ) : (
+              <a href={BLOG.profileLink || BLOG.socialLink} target="_blank" rel="noreferrer" className="text-link">About <span aria-hidden="true">↗</span></a>
+            )}
+          </>
         )}
-      </ul>
-    </div>
+      </nav>
+    </header>
   )
 }
-
-export default function Header({ navBarTitle, fullWidth }) {
-  const BLOG = useConfig()
-  const { dark } = useTheme()
-
-  // Favicon
-
-  const [fallbackFavicon, setFallbackFavicon] = useState(false)
-  const favicon = !fallbackFavicon && dark ? '/favicon.dark.png' : '/favicon.png'
-
-  const useSticky = !BLOG.autoCollapsedNavBar
-  const navRef = useRef(/** @type {HTMLDivElement} */ undefined)
-  const sentinelRef = useRef(/** @type {HTMLDivElement} */ undefined)
-  const handler = useCallback(([entry]) => {
-    if (useSticky && navRef.current) {
-      navRef.current?.classList.toggle('sticky-nav-full', !entry.isIntersecting)
-    } else {
-      navRef.current?.classList.add('remove-sticky')
-    }
-  }, [useSticky])
-
-  useEffect(() => {
-    const sentinelEl = sentinelRef.current
-    const observer = new window.IntersectionObserver(handler)
-    observer.observe(sentinelEl)
-
-    return () => {
-      sentinelEl && observer.unobserve(sentinelEl)
-    }
-  }, [handler, sentinelRef])
-
-  const titleRef = useRef(/** @type {HTMLParagraphElement} */ undefined)
-
-  function handleClickHeader(/** @type {MouseEvent} */ ev) {
-    if (![navRef.current, titleRef.current].includes(ev.target)) return
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
-  }
-
-  return (
-    <>
-      <div className="observer-element h-4 md:h-12" ref={sentinelRef}></div>
-      <div
-        className={`sticky-nav group m-auto w-full h-6 flex flex-row justify-between items-center mb-2 md:mb-28 py-8 bg-opacity-60 ${!fullWidth ? 'px-8' : 'px-8 md:px-24'
-          }`}
-        id="sticky-nav"
-        ref={navRef}
-        onClick={handleClickHeader}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className="caret w-6 h-6 absolute inset-x-0 bottom-0 mx-auto pointer-events-none opacity-30 group-hover:opacity-100 transition duration-100"
-        >
-          <path
-            d="M12 10.828l-4.95 4.95-1.414-1.414L12 8l6.364 6.364-1.414 1.414z"
-            className="fill-black dark:fill-white"
-          />
-        </svg>
-        <div className="flex items-center">
-          <Link href="/" aria-label={BLOG.title}>
-            <Image
-              className='inline-block rounded-md'
-              src={favicon}
-              width={24}
-              height={24}
-              alt={BLOG.title}
-              onError={() => setFallbackFavicon(true)}
-            />
-            <HeaderName
-              ref={titleRef}
-              siteTitle={BLOG.title}
-              siteDescription={BLOG.description}
-              postTitle={navBarTitle}
-              onClick={handleClickHeader}
-            />
-          </Link>
-        </div>
-        <NavBar />
-      </div>
-    </>
-  )
-}
-
-const HeaderName = forwardRef(function HeaderName({ siteTitle, siteDescription, postTitle, onClick }, ref) {
-  return (
-    <p
-      ref={ref}
-      className="inline-block align-middle header-name ml-2 font-medium text-gray-600 dark:text-gray-300 capture-pointer-events grid-rows-1 grid-cols-1 items-center"
-      onClick={onClick}
-    >
-      {postTitle && <span className="post-title row-start-1 col-start-1">{postTitle}</span>}
-      <span className="row-start-1 col-start-1">
-        <span className="site-title">{siteTitle}</span>
-      </span>
-    </p>
-  )
-})
